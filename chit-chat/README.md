@@ -6,11 +6,11 @@ at https://feed.gagarin.cloud. Page: https://gagarin.cloud/recipes/chit-chat
 
 ## What you build
 
-```
-web (nginx, :8080) ──> api (node, :4000) ──> pg (postgres)
-       │
-       └──> https://<address>
-```
+What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
+
+- `web` (service, nginx, :8080, public address) → `api`
+- `api` (service, node, :4000, private) → `pg`
+- `pg` (Postgres, 10 GB disk)
 
 nginx serves the page and proxies `/api/` to the `api` service by name. The
 API creates its own schema on boot, so there is no migration step.

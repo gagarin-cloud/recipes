@@ -13,9 +13,11 @@ private chats.
 
 ## What you build
 
-```
-claude.ai / ChatGPT / Claude Code ──OAuth──> mcp (service, :8080) ──MTProto──> Telegram
-```
+What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
+
+- `client` (outside Gagarin, your MCP client) → `mcp`
+- `mcp` (service, :8080 · OAuth, public address) → `telegram`
+- `telegram` (outside Gagarin, MTProto)
 
 The server is its own OAuth authorization server, and Telegram is its user
 database. You add it as a connector, sign in to Telegram on its page (QR code

@@ -6,9 +6,10 @@ https://gagarin.cloud/recipes/remote-mcp-server
 
 ## What you build
 
-```
-auth (external) ──> mcp (service, :8080) ──> https://<address>/mcp
-```
+What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
+
+- `mcp` (service, :8080 · /mcp, public address) → `auth`
+- `auth` (external, AUTH_TOKEN)
 
 The server is stateless: each request gets a fresh MCP server, so a restart
 loses nothing. The example tool, `time_in`, returns the time in a zone. Replace

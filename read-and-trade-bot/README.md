@@ -11,12 +11,11 @@ of a worker, a website and a database running together, with real API costs.
 
 ## What you build
 
-```
-bot (worker, :8080 health only, private) ──┐
-                                           ├──> db (postgres)
-web (Next.js, :3000) ──────────────────────┘
-       └──> https://<address>
-```
+What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
+
+- `bot` (service, worker, :8080 health, private) → `db`
+- `web` (service, Next.js, :3000, public address) → `db`
+- `db` (Postgres, 10 GB disk)
 
 The worker calls OpenAI, SEC EDGAR, Finnhub, Marketaux and Telegram. The
 website reads the same database and writes nothing.

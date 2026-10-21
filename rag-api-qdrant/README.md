@@ -7,11 +7,11 @@ https://gagarin.cloud/recipes/rag-api-qdrant
 
 ## What you build
 
-```
-vectors (qdrant) ──┐
-                   ├──> api (service, :8080) ──> https://<address>
-auth (external) ───┘
-```
+What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
+
+- `api` (service, :8080 · size s, public address) → `vectors`, `auth`
+- `vectors` (Qdrant, 5 GB disk)
+- `auth` (external, AUTH_TOKEN)
 
 - `POST /ingest` with `{"texts": [...]}` embeds and stores up to 256 passages.
 - `POST /ask` with `{"question": "...", "limit": 3}` returns the closest ones.

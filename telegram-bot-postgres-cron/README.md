@@ -6,12 +6,12 @@ much. Page: https://gagarin.cloud/recipes/telegram-bot-postgres-cron
 
 ## What you build
 
-```
-telegram (external) ──┐
-                      ├──> bot (service, :8080, private)
-db (postgres) ────────┤
-                      └──> digest (job, 07:00 UTC daily)
-```
+What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
+
+- `bot` (service, :8080 · size s, private) → `db`, `telegram`
+- `digest` (scheduled job, 07:00 UTC daily) → `db`, `telegram`
+- `db` (Postgres, 1 GB disk)
+- `telegram` (external, TELEGRAM_TOKEN)
 
 The bot long-polls Telegram, so it needs no public address. The digest is the
 same image started with `MODE=digest`.
