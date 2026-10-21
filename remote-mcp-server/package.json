@@ -1,0 +1,13 @@
+{
+  "name": "remote-mcp-server",
+  "private": true,
+  "type": "module",
+  "description": "A remote MCP server over streamable HTTP, behind a bearer token.",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "zod": "^3.25.0"
+  }
+}

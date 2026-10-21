@@ -1,0 +1,5 @@
+services:
+  mcp:
+    env_file: !reset []
+    environment:
+      AUTH_TOKEN: smoke-token-0123456789abcdef0123456789abcdef

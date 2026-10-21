@@ -1,0 +1,4 @@
+smoke
+.env*
+!.env.example
+__pycache__
