@@ -1,0 +1,79 @@
+services:
+  bot:
+    build:
+      context: .
+    image: insider-bot:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Overrides whatever .env says, so a local DB_URL pointing at a Postgres on
+      # the host cannot accidentally be used from inside the container.
+      DB_URL: postgres://insider:insider@db:5432/insider
+      # Pinned so the cron schedules mean the same thing on every host.
+      TZ: UTC
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    stop_grace_period: 20s
+
+  web:
+    build:
+      context: ./web
+    image: insider-web:latest
+    restart: unless-stopped
+    environment:
+      # The only variable the site needs. It is deliberately not given `env_file:
+      # .env` the way the bot is: this process reads three tables and holds no
+      # API key, and handing it OpenAI and Telegram credentials it never uses
+      # would put them in a container that answers requests from a browser.
+      DB_URL: postgres://insider:insider@db:5432/insider
+      TZ: UTC
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # http://localhost:3000 — the open calls, the same rows the bot posts to
+      # Telegram.
+      - "3000:3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    stop_grace_period: 10s
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: insider
+      POSTGRES_PASSWORD: insider
+      POSTGRES_DB: insider
+    volumes:
+      # A named volume rather than a bind mount: unlike the SQLite file this is
+      # not something to open in a local browser, and Postgres wants its data
+      # directory owned by its own uid. Note it does NOT survive
+      # `docker compose down -v` — see README for how to dump before doing that.
+      - db-data:/var/lib/postgresql/data
+    ports:
+      # Published so `psql postgres://insider:insider@localhost:5433/insider`
+      # from the host can inspect calls and tune prompts. 5433 to stay clear of a
+      # Postgres already running locally on 5432.
+      - "5433:5432"
+    healthcheck:
+      # The bot's own initDb() retries, so this is belt and braces — but it keeps
+      # the first boot's logs clean rather than showing a minute of retries.
+      test: ["CMD-SHELL", "pg_isready -U insider -d insider"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:
