@@ -1,0 +1,11 @@
+# Run it on your machine: cp .env.example .env, put a token in it, then
+#   docker compose up --build
+services:
+  mcp:
+    build: .
+    env_file: [.env]
+    ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 2s
+      retries: 30

@@ -1,0 +1,22 @@
+# CI's dry run: the same services, with a fake Telegram instead of the real one.
+services:
+  telegram:
+    image: node:24-alpine
+    command: ["node", "/smoke/fake-telegram.js"]
+    volumes: ["./smoke:/smoke:ro"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/sent"]
+      interval: 2s
+      retries: 20
+  bot:
+    env_file: !reset []
+    environment:
+      TELEGRAM_TOKEN: "123:smoke"
+      TELEGRAM_API: http://telegram:8081
+    depends_on:
+      telegram: { condition: service_healthy }
+  digest:
+    env_file: !reset []
+    environment:
+      TELEGRAM_TOKEN: "123:smoke"
+      TELEGRAM_API: http://telegram:8081

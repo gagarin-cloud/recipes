@@ -1,0 +1,21 @@
+# Run it on your machine: cp .env.example .env, put a token in it, then
+#   docker compose up --build
+services:
+  vectors:
+    image: qdrant/qdrant:v1.15.4
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 2s
+      retries: 30
+  api:
+    build: .
+    env_file: [.env]
+    environment:
+      VECTORS_URL: http://vectors:6333
+    ports: ["8080:8080"]
+    depends_on:
+      vectors: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz')"]
+      interval: 3s
+      retries: 40
