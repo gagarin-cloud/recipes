@@ -48,10 +48,10 @@ only the client can receive the authorization code at the end of it.
 ## 3. Get `gg` and an account
 
 ```bash
-brew install gagarin-cloud/tap/gg     # or: go install github.com/gagarin-cloud/gg@latest
-gg signup you@example.com             # click the link in the email
-gg auth --claim <code>
-gg whoami                             # should print your account
+brew install --cask gagarin-cloud/tap/gg   # or: go install github.com/gagarin-cloud/gg@latest
+gg login                                   # prints a link and a code; approve it in the browser
+gg login                                   # run again once approved: it collects the credential
+gg whoami                                  # should print your account
 ```
 
 Docker must be running: `gg` builds the image locally before pushing it.

@@ -49,8 +49,8 @@ command -v gg >/dev/null 2>&1 || die "gg is not installed. See DEPLOY.md section
 command -v docker >/dev/null 2>&1 || die "docker is not installed; gg needs it to build the image."
 docker info >/dev/null 2>&1 || die "the docker daemon is not running. Start Docker and retry."
 gg whoami >/dev/null 2>&1 || die \
-  "gg has no credentials on this machine. Run 'gg signup <your-email>', click the
-       link in the email, then 'gg auth --claim <code>'. See DEPLOY.md section 3."
+  "gg has no credentials on this machine. Run 'gg login', approve the link it
+       prints in a browser, then run 'gg login' again. See DEPLOY.md section 3."
 
 say "Authorised as $(gg whoami | awk '/^account/ {print $2}')"
 

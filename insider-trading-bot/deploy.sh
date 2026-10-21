@@ -88,15 +88,14 @@ command -v docker >/dev/null 2>&1 || die "docker is not installed; gg needs it t
 docker info >/dev/null 2>&1 || die "the docker daemon is not running. Start Docker and retry."
 
 gg whoami >/dev/null 2>&1 || die \
-  "gg has no credentials on this machine. Run 'gg signup <your-email>', click the
-       link in the email, then 'gg auth --claim <code>'. See DEPLOY.md section 3."
+  "gg has no credentials on this machine. Run 'gg login', approve the link it
+       prints in a browser, then run 'gg login' again. See DEPLOY.md section 3."
 
 say "Authorised as $(gg whoami | awk '/^account/ {print $2}')"
 
-# `gg auth` normally logs Docker in to Gagarin's registry as part of claiming
-# credentials — but it silently skips that step if Docker was not installed yet
-# at the time. The symptom is the build succeeding and then `docker push failed`.
-# It is idempotent and cheap, so just do it every run rather than detecting it.
+# Docker has to be logged in to Gagarin's registry before a push. The symptom
+# of it not being is the build succeeding and then `docker push failed`.
+# `gg registry login` is idempotent and cheap, so it runs every time.
 say "Refreshing registry login"
 run gg registry login >/dev/null 2>&1 \
   || warn "gg registry login failed; the push may fail. Try running it by hand."

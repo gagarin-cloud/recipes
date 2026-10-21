@@ -1,4 +1,92 @@
-# insider-bot
+# Insider: a news-reading trade-idea bot
+
+A worker that reads company news every three hours, looks for second-order
+beneficiaries (the small supplier that landed a large customer), and posts
+a few trade ideas to a Telegram channel. A second service publishes the open
+calls and their results as a website. Page:
+https://gagarin.cloud/recipes/insider-trading-bot
+
+**It has no validated edge and it is not financial advice.** It is an example
+of a worker, a website and a database running together, with real API costs.
+
+## What you build
+
+```
+bot (worker, :8080 health only, private) ──┐
+                                           ├──> db (postgres)
+web (Next.js, :3000) ──────────────────────┘
+       └──> https://<address>
+```
+
+The worker calls OpenAI, SEC EDGAR, Finnhub, Marketaux and Telegram. The
+website reads the same database and writes nothing.
+
+## Paste this into your coding agent
+
+```
+Deploy the insider-trading-bot recipe from https://github.com/gagarin-cloud/recipes to Gagarin Cloud. Follow https://gagarin.cloud/recipes/insider-trading-bot
+```
+
+You need an OpenAI key with credit, a Telegram bot and channel, and free
+Finnhub and Marketaux keys. [DEPLOY.md](DEPLOY.md) lists each one and where to
+get it.
+
+## What gagarin creates
+
+| Name | Kind | Size | Holds |
+|---|---|---|---|
+| `db` | postgres | s, 10 GB disk | seen events and scored calls |
+| `bot` | service | s | the worker, private |
+| `web` | service | s | the website, at a public HTTPS address |
+
+## The commands
+
+`./deploy.sh` runs these for you, with `.env` filled in:
+
+```
+gg init insider-bot
+gg resource add insider-bot/db postgres --size s --storage 10
+gg ship insider-bot/bot:8080 --size s --env-file .env
+gg deps add insider-bot/bot db
+gg ship insider-bot/web:3000 --context ./web --size s
+gg deps add insider-bot/web db
+gg domain add insider-bot/web
+```
+
+## What it costs
+
+About $32.16 a month on gagarin: three size-s containers at $10.22 each and
+10 GB of disk at $1.50. OpenAI tokens come on top; DEPLOY.md measures them.
+Traffic is free. Rates: https://gagarin.cloud/pricing
+
+## What can go wrong
+
+- `gg ship` fails before it builds: Docker is not running. `docker info` says.
+- The worker logs a database error at first boot: the dependency lands just
+  after the service. It retries with backoff.
+- The website is killed for memory: move it to size m with
+  `WEB_SIZE=m ./deploy.sh`. `gg status` names the kill.
+- A forgotten variable: a deploy replaces the whole environment. Deploy with
+  the script, which restates all of it.
+
+## Run it locally
+
+```
+cp .env.example .env    # fill in the keys DEPLOY.md lists
+docker compose up --build
+```
+
+## Clean up
+
+```
+gg destroy insider-bot
+```
+
+gagarin emails the project owner a button to approve the deletion.
+
+---
+
+## How it works, in detail
 
 A headless worker that reads company news, reasons about **second-order
 beneficiaries**, and posts a small number of high-conviction trade ideas to a

@@ -1,0 +1,10 @@
+{
+  "recipes": [
+    { "slug": "telegram-bot-postgres-cron", "images": [{ "context": ".", "needs_env": true }] },
+    { "slug": "remote-mcp-server", "images": [{ "context": ".", "needs_env": true }] },
+    { "slug": "rag-api-qdrant", "images": [{ "context": ".", "needs_env": true }] },
+    { "slug": "feed", "images": [{ "context": "api", "needs_env": true }, { "context": "web", "needs_env": false }] },
+    { "slug": "telegram-mcp", "images": [{ "context": ".", "needs_env": true }] },
+    { "slug": "insider-trading-bot", "images": [{ "context": ".", "needs_env": true }, { "context": "web", "needs_env": false }] }
+  ]
+}

@@ -1,4 +1,92 @@
-# telegram-mcp
+# Telegram MCP server for your own account
+
+An MCP server that gives an agent your personal Telegram account: search and
+join channels, read and search history, send and forward messages. It signs in
+as you, not as a bot. Page: https://gagarin.cloud/recipes/telegram-mcp
+
+**Read this first.** It drives a real user account through Telegram's MTProto
+API. Telegram's terms frown on automating a user account, and Telegram can
+limit or ban one that sends too much. The server rate-limits itself, which
+makes that less likely and does not rule it out. Use an account you can afford
+to lose. Anyone holding a token this server issues can read that account's
+private chats.
+
+## What you build
+
+```
+claude.ai / ChatGPT / Claude Code ──OAuth──> mcp (service, :8080) ──MTProto──> Telegram
+```
+
+The server is its own OAuth authorization server, and Telegram is its user
+database. You add it as a connector, sign in to Telegram on its page (QR code
+or phone and code), and the client holds the result. The server stores no
+sessions and has no volume.
+
+## Paste this into your coding agent
+
+```
+Deploy the telegram-mcp recipe from https://github.com/gagarin-cloud/recipes to Gagarin Cloud. Follow https://gagarin.cloud/recipes/telegram-mcp
+```
+
+You need `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` from
+https://my.telegram.org and an `ENCRYPTION_KEY` (`openssl rand -hex 32`).
+[DEPLOY.md](DEPLOY.md) explains each one.
+
+## What gagarin creates
+
+| Name | Kind | Size | Holds |
+|---|---|---|---|
+| `mcp` | service | s | the server, at a public HTTPS address |
+
+## The commands
+
+`./deploy.sh` runs these for you, in this order, with `.env` filled in:
+
+```
+gg init telegram-mcp
+gg ship telegram-mcp/mcp:8080 --env-file .env --env PUBLIC_URL=http://localhost:8080
+gg domain add telegram-mcp/mcp
+gg deploy telegram-mcp/mcp:8080 mcp:<tag> --env-file .env --env PUBLIC_URL=https://<address>
+```
+
+The second deploy is the same image again, told its own address: the address
+is the OAuth issuer, and it does not exist until `gg domain add` runs.
+
+## What it costs
+
+About $10.22 a month: one size-s container. Traffic is free. Telegram is free.
+Rates: https://gagarin.cloud/pricing
+
+## What can go wrong
+
+- `FLOOD_WAIT` errors: Telegram is rate-limiting the account. The server backs
+  off; long waits come back to the agent as an error naming the seconds.
+- Every connector has to sign in again: `ENCRYPTION_KEY` changed. It is the
+  server's identity; keep it.
+- Sign-in fails with a redirect error: `PUBLIC_URL` is not the address clients
+  reach. Re-run `./deploy.sh`.
+- The login code never arrives: Telegram sends codes for third-party apps only
+  to the account's other sessions. Use the QR code instead.
+
+## Run it locally
+
+```
+cp .env.example .env    # fill in TELEGRAM_API_ID, TELEGRAM_API_HASH, ENCRYPTION_KEY
+docker compose up --build
+```
+
+## Clean up
+
+```
+gg destroy telegram-mcp
+```
+
+gagarin emails the project owner a button to approve the deletion. End the
+Telegram sessions under Settings → Devices in the Telegram app.
+
+---
+
+## How it works, in detail
 
 An MCP server that hands an agent **your own Telegram account** — not a bot.
 

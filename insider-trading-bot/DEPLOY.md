@@ -214,18 +214,13 @@ Don't pipe a script from a URL into a shell.
 If it reports no credentials:
 
 ```bash
-gg signup you@yourdomain.com
+gg login
 ```
 
-Click the button in the email — that one click creates the account and authorises
-this machine. Then:
-
-```bash
-gg auth --claim <code-that-signup-printed>
-```
-
-This also logs Docker in to Gagarin's registry. There is no second account and no
-token for you to copy anywhere.
+It prints a link and a code. Open the link, sign in with GitHub or Google,
+check the code matches, and approve. Then run `gg login` again: it stores the
+credential and logs Docker in to Gagarin's registry. There is no token for you
+to copy anywhere.
 
 ---
 

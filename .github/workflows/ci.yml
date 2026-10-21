@@ -1,0 +1,92 @@
+name: ci
+
+# A dry run of every recipe. Nothing here deploys to gagarin: it builds each
+# image, starts the services that need configuration without any and checks
+# they refuse, runs each recipe's smoke test against local stand-ins (a fake
+# Telegram, a local Postgres or Qdrant), and checks every gg command the
+# READMEs name against the real CLI.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # gg is where commands change, so a README can go stale without anybody
+    # touching this repository.
+    - cron: "41 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      recipes: ${{ steps.list.outputs.recipes }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: list
+        run: echo "recipes=$(jq -c '[.recipes[].slug]' recipes.json)" >> "$GITHUB_OUTPUT"
+
+  dry-run:
+    needs: list
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        recipe: ${{ fromJson(needs.list.outputs.recipes) }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build every image; the ones that need configuration refuse to start without it
+        env:
+          RECIPE: ${{ matrix.recipe }}
+        run: |
+          set -euo pipefail
+          jq -r --arg r "$RECIPE" '.recipes[] | select(.slug == $r) | .images[] | "\(.context) \(.needs_env)"' recipes.json |
+          while read -r context needs_env; do
+            if [ "$needs_env" = true ]; then .ci/missing-env.sh "$RECIPE" "$context"
+            else .ci/build.sh "$RECIPE" "$context"; fi
+          done
+
+      - name: Smoke test against local stand-ins
+        if: hashFiles(format('{0}/smoke/test.sh', matrix.recipe)) != ''
+        run: ./${{ matrix.recipe }}/smoke/test.sh
+
+  commands:
+    # Every `gg ...` in a README must be a command and flags gg actually has.
+    # The checker is the one claude-plugin runs against its skill.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install the latest gg release
+        run: |
+          go install github.com/gagarin-cloud/gg@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      # On a pull request, the checker comes from claude-plugin's branch of the
+      # same name when there is one, so a change to the checker and its first
+      # use can land together.
+      - name: Resolve the checker's ref
+        id: ref
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          ref=main
+          if [ -n "$BRANCH" ] && git ls-remote --exit-code https://github.com/gagarin-cloud/claude-plugin "refs/heads/$BRANCH" >/dev/null; then
+            ref="$BRANCH"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+        with:
+          repository: gagarin-cloud/claude-plugin
+          ref: ${{ steps.ref.outputs.ref }}
+          path: .claude-plugin-checkout
+
+      - name: Check the commands
+        run: python3 .claude-plugin-checkout/scripts/check_skill_against_gg.py */README.md
