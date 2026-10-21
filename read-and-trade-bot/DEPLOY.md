@@ -82,7 +82,7 @@ worker refuses to boot rather than pretending it is fine.
 
 Then pick the form that matches your channel:
 
-- **Public channel** — use the handle, including the `@`: `TELEGRAM_CHANNEL_ID="@myinsiderfeed"`.
+- **Public channel** — use the handle, including the `@`: `TELEGRAM_CHANNEL_ID="@mytradeideas"`.
 - **Private channel** — you need the numeric id, which looks like `-1001234567890`.
   Post any message in the channel, then ask your bot what it saw:
 
@@ -132,7 +132,7 @@ eventually an IP block. See
 <https://www.sec.gov/os/accessing-edgar-data>.
 
 ```
-SEC_USER_AGENT="insider-bot you@yourdomain.com"
+SEC_USER_AGENT="read-and-trade-bot you@yourdomain.com"
 ```
 
 Use an address you actually read. This is the one credential where the polite
@@ -266,7 +266,7 @@ Three things it does that matter, and that you would have to remember by hand:
 ### What this costs
 
 The deploy creates **three** billable things: the worker, the website and the
-Postgres, all at size `s`. Check the current rate with `gg status insider-bot`,
+Postgres, all at size `s`. Check the current rate with `gg status read-and-trade`,
 which prints the day's accrued cost at the bottom of the table.
 
 `DB_SIZE=m ./deploy.sh` moves the database up if you ever need it; you almost
@@ -348,15 +348,15 @@ is running*. Those are different claims. This is the command that answers the
 second one:
 
 ```bash
-gg status insider-bot
+gg status read-and-trade
 ```
 
 `●` means the cluster agrees with what was asked for. `○` means it does not, and
 the reason is printed beside it. The website's address hangs under its row; `gg
-domain ls insider-bot` prints it on its own. Then read the logs:
+domain ls read-and-trade` prints it on its own. Then read the logs:
 
 ```bash
-gg logs insider-bot/bot
+gg logs read-and-trade/bot
 ```
 
 A healthy first boot logs, in order:
@@ -384,13 +384,13 @@ again:
 
 ```bash
 ./deploy.sh
-gg logs insider-bot/bot | grep 'storage check'
+gg logs read-and-trade/bot | grep 'storage check'
 ```
 
 `existedAtBoot: true` on that second boot, with a non-zero event count, is your
 proof the database is real and the history survived. If it says `false` again the
 deploy is pointed at a different database from the one it filled — check
-`gg deps ls insider-bot/bot` names `db`, and that nothing is overriding `DB_URL`.
+`gg deps ls read-and-trade/bot` names `db`, and that nothing is overriding `DB_URL`.
 
 Unlike the SQLite version, a broken database here is loud rather than silent: an
 unreachable or misconfigured Postgres is a boot that retries and then exits, not
@@ -402,8 +402,8 @@ reading logs at all.
 To look at the data yourself:
 
 ```bash
-gg resource secrets insider-bot/db     # prints DB_URL among the rest
-psql "$(gg resource secrets insider-bot/db --format json | jq -r .env.DB_URL)"
+gg resource secrets read-and-trade/db     # prints DB_URL among the rest
+psql "$(gg resource secrets read-and-trade/db --format json | jq -r .env.DB_URL)"
 ```
 
 Treat that output as a live credential — do not paste it anywhere.
@@ -419,26 +419,26 @@ Treat that output as a live credential — do not paste it anywhere.
 | Every OpenAI call fails with `insufficient_quota` | The key is valid; the account has no credit. Add billing. |
 | EDGAR returns 403 | `SEC_USER_AGENT` is missing or not a real contact string. Repeat offences get the IP blocked. |
 | `existedAtBoot: false` on every boot | The deploy is pointed at a different database each time. See "Confirming persistence" above. |
-| Boot logs `database not reachable yet`, then exits | The `db` resource is not running (`gg status insider-bot`), or the worker does not declare it. `gg deps ls insider-bot/bot` should name `db`; if not, `gg deps add insider-bot/bot db`. |
+| Boot logs `database not reachable yet`, then exits | The `db` resource is not running (`gg status read-and-trade`), or the worker does not declare it. `gg deps ls read-and-trade/bot` should name `db`; if not, `gg deps add read-and-trade/bot db`. |
 | `Invalid environment configuration: DB_URL` | The service does not reach the `db` resource, so nothing injected `DB_URL`. Same fix as above. |
 | Nothing posts, but the logs look clean | Working as intended, most likely. Gates are strict: conviction must be ≥7, one post per ticker per 72h, 3/day maximum. Days with nothing publishable are normal. Check `triage:dry` locally if you suspect the filter. |
 | `[project_not_found]` from a `gg` command | The project name is wrong, or it belongs to another account. `gg projects` lists what you can reach. |
 | The worker hangs on connect rather than failing | A missing `gg deps add`. An undeclared call is *dropped*, not refused, so it presents as a timeout rather than an error naming the cause. |
 
-Read `gg logs insider-bot/bot` before changing anything. Nearly every failure
+Read `gg logs read-and-trade/bot` before changing anything. Nearly every failure
 above names itself there.
 
 ## Operating it
 
 ```bash
-gg status insider-bot                  # is it up, and what does it reach
-gg logs insider-bot/bot                # what it is doing
-gg history insider-bot/bot             # every deploy, newest first
-gg rollback insider-bot/bot            # put the previous one back
+gg status read-and-trade                  # is it up, and what does it reach
+gg logs read-and-trade/bot                # what it is doing
+gg history read-and-trade/bot             # every deploy, newest first
+gg rollback read-and-trade/bot            # put the previous one back
 ./deploy.sh                            # ship a new build
 
-gg resource backups insider-bot/db     # nightly dumps, kept 14 days
-gg resource backup  insider-bot/db     # take one now, e.g. before a schema change
+gg resource backups read-and-trade/db     # nightly dumps, kept 14 days
+gg resource backup  read-and-trade/db     # take one now, e.g. before a schema change
 ```
 
 Postgres is dumped nightly and kept for fourteen days, which is the one real

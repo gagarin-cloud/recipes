@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #
-# Deploy the insider bot to Gagarin Cloud.
+# Deploy the read-and-trade bot to Gagarin Cloud.
 #
 # Assumes .env is complete. See DEPLOY.md for how to get each credential.
 #
 # Idempotent: run it again to ship a new build. It creates the project on the
 # first run and reuses it afterwards.
 #
-#   ./deploy.sh                      deploy as project "insider-bot"
+#   ./deploy.sh                      deploy as project "read-and-trade"
 #   PROJECT=my-bot ./deploy.sh       deploy under a different project name
 #   DRY_RUN_DEPLOY=1 ./deploy.sh     print what it would do, change nothing
 #   SKIP_WEB=1 ./deploy.sh           the worker only; do not ship the website
@@ -17,7 +17,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-PROJECT="${PROJECT:-insider-bot}"
+PROJECT="${PROJECT:-read-and-trade}"
 SERVICE="${SERVICE:-bot}"
 
 # The website: the Next.js app in ./web, which renders the open calls straight
@@ -163,7 +163,7 @@ fi
 #      ignored anyway. Better not to have a stale credential in the call at all.
 #
 # Written 0600 and deleted on exit: it holds every credential in the clear.
-RENDERED_ENV="$(mktemp -t insider-bot-env.XXXXXX)"
+RENDERED_ENV="$(mktemp -t read-and-trade-env.XXXXXX)"
 chmod 600 "$RENDERED_ENV"
 trap 'rm -f "$RENDERED_ENV"' EXIT
 

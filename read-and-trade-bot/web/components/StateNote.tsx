@@ -29,7 +29,7 @@ export function StateNote({ result }: { result: Extract<Read<unknown>, { ok: fal
         database has its connections dropped rather than refused, so it times out.
       </p>
       <p>
-        <code>gg deps ls insider-bot/web</code> shows what this service may reach.
+        <code>gg deps ls read-and-trade/web</code> shows what this service may reach.
       </p>
     </div>
   )

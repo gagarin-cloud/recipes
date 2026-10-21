@@ -2,7 +2,7 @@ services:
   bot:
     build:
       context: .
-    image: insider-bot:latest
+    image: read-and-trade-bot:latest
     restart: unless-stopped
     env_file: .env
     environment:
@@ -25,7 +25,7 @@ services:
   web:
     build:
       context: ./web
-    image: insider-web:latest
+    image: read-and-trade-web:latest
     restart: unless-stopped
     environment:
       # The only variable the site needs. It is deliberately not given `env_file:

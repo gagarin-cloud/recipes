@@ -1,10 +1,10 @@
-# Insider: a news-reading trade-idea bot
+# Read-and-trade bot: news in, trade ideas out
 
 A worker that reads company news every three hours, looks for second-order
 beneficiaries (the small supplier that landed a large customer), and posts
 a few trade ideas to a Telegram channel. A second service publishes the open
 calls and their results as a website. Page:
-https://gagarin.cloud/recipes/insider-trading-bot
+https://gagarin.cloud/recipes/read-and-trade-bot
 
 **It has no validated edge and it is not financial advice.** It is an example
 of a worker, a website and a database running together, with real API costs.
@@ -24,7 +24,7 @@ website reads the same database and writes nothing.
 ## Paste this into your coding agent
 
 ```
-Deploy the insider-trading-bot recipe from https://github.com/gagarin-cloud/recipes to Gagarin Cloud. Follow https://gagarin.cloud/recipes/insider-trading-bot
+Deploy the read-and-trade-bot recipe from https://github.com/gagarin-cloud/recipes to Gagarin Cloud. Follow https://gagarin.cloud/recipes/read-and-trade-bot
 ```
 
 You need an OpenAI key with credit, a Telegram bot and channel, and free
@@ -44,13 +44,13 @@ get it.
 `./deploy.sh` runs these for you, with `.env` filled in:
 
 ```
-gg init insider-bot
-gg resource add insider-bot/db postgres --size s --storage 10
-gg ship insider-bot/bot:8080 --size s --env-file .env
-gg deps add insider-bot/bot db
-gg ship insider-bot/web:3000 --context ./web --size s
-gg deps add insider-bot/web db
-gg domain add insider-bot/web
+gg init read-and-trade
+gg resource add read-and-trade/db postgres --size s --storage 10
+gg ship read-and-trade/bot:8080 --size s --env-file .env
+gg deps add read-and-trade/bot db
+gg ship read-and-trade/web:3000 --context ./web --size s
+gg deps add read-and-trade/web db
+gg domain add read-and-trade/web
 ```
 
 ## What it costs
@@ -79,7 +79,7 @@ docker compose up --build
 ## Clean up
 
 ```
-gg destroy insider-bot
+gg destroy read-and-trade
 ```
 
 Gagarin emails the project owner a button to approve the deletion.
@@ -241,7 +241,7 @@ easy-to-miss ones:
 - `DB_URL` has **no default**, on purpose. A worker that guessed its way to the
   wrong database would run perfectly and write its call history somewhere nobody
   reads, so a missing one is a crash at boot instead.
-- `SEC_USER_AGENT` must be a real contact string (`"insider-bot you@example.com"`).
+- `SEC_USER_AGENT` must be a real contact string (`"read-and-trade-bot you@example.com"`).
   EDGAR returns 403 without it and will eventually block the IP.
 - The Telegram bot must be added to the channel **as an admin with Post Messages**,
   or every send fails with 403. The worker checks this at boot and refuses to start.

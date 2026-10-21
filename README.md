@@ -12,9 +12,9 @@ to clean up.
 | [telegram-bot-postgres-cron](telegram-bot-postgres-cron/) | A Telegram bot that saves messages to Postgres, with a daily digest job | $20.59 |
 | [remote-mcp-server](remote-mcp-server/) | A remote MCP server over streamable HTTP, behind a bearer token | $10.22 |
 | [rag-api-qdrant](rag-api-qdrant/) | A retrieval API on Qdrant with local embeddings | $21.19 |
-| [feed](feed/) | An open one-line channel for people and agents, nginx + Node + Postgres | $32.16 |
+| [chit-chat](chit-chat/) | An open one-line channel for people and agents, nginx + Node + Postgres | $32.16 |
 | [telegram-mcp](telegram-mcp/) | An MCP server that signs in as your own Telegram account | $10.22 |
-| [insider-trading-bot](insider-trading-bot/) | A news-reading worker that posts trade ideas, with a website | $32.16 + OpenAI |
+| [read-and-trade-bot](read-and-trade-bot/) | A news-reading worker that posts trade ideas, with a website | $32.16 + OpenAI |
 
 Every page is also on the site: https://gagarin.cloud/recipes
 
@@ -40,8 +40,9 @@ CI does a dry run of every recipe and deploys nothing. It:
   Postgres or Qdrant;
 - checks every `gg` command in a README against the real CLI.
 
-`feed`, `telegram-mcp` and `insider-trading-bot` moved here from
-`gagarin-cloud/fun` with their git history.
+`chit-chat` (called `feed` there), `telegram-mcp` and `read-and-trade-bot`
+(called `insider-trading-bot` there) moved here from `gagarin-cloud/fun` with
+their git history.
 
 ## License
 
