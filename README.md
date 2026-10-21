@@ -1,10 +1,10 @@
 # recipes
 
 Small, complete applications to hand to a coding agent and run on
-[gagarin](https://gagarin.cloud). Each directory builds from its own
+[Gagarin](https://gagarin.cloud). Each directory builds from its own
 Dockerfile, runs on your machine with `docker compose up --build`, and has a
 README in the same order: what you build, the sentence to paste into your
-agent, what gagarin creates, the commands, the cost, what can go wrong, and how
+agent, what Gagarin creates, the commands, the cost, what can go wrong, and how
 to clean up.
 
 | Recipe | What it is | About a month |
@@ -34,7 +34,7 @@ CI does a dry run of every recipe and deploys nothing. It:
 
 - builds every image;
 - starts each image that needs configuration without any, and expects it to
-  exit naming what is missing (on gagarin, that is what a forgotten `--deps`
+  exit naming what is missing (on Gagarin, that is what a forgotten `--deps`
   looks like);
 - runs the first four against local stand-ins: a fake Telegram, a local
   Postgres or Qdrant;

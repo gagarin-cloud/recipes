@@ -27,7 +27,7 @@ the image, so the first request does not wait for a download.
 Deploy the rag-api-qdrant recipe from https://github.com/gagarin-cloud/recipes to Gagarin Cloud. Follow https://gagarin.cloud/recipes/rag-api-qdrant
 ```
 
-## What gagarin creates
+## What Gagarin creates
 
 | Name | Kind | Size | Holds |
 |---|---|---|---|
@@ -48,7 +48,7 @@ gg domain add search/api
 ```
 
 Make `.env.auth` with `echo "TOKEN=$(openssl rand -hex 32)" > .env.auth` and
-add it to `.gitignore`. gagarin publishes it as `AUTH_TOKEN`, and the qdrant
+add it to `.gitignore`. Gagarin publishes it as `AUTH_TOKEN`, and the qdrant
 gives the service `VECTORS_URL` and `VECTORS_API_KEY`.
 
 Try it with the address `gg domain add` printed:
@@ -88,5 +88,5 @@ docker compose up --build
 gg destroy search
 ```
 
-gagarin emails the project owner a button to approve the deletion. The
+Gagarin emails the project owner a button to approve the deletion. The
 vectors go with it.

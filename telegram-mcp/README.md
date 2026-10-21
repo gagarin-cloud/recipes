@@ -32,7 +32,7 @@ You need `TELEGRAM_API_ID` and `TELEGRAM_API_HASH` from
 https://my.telegram.org and an `ENCRYPTION_KEY` (`openssl rand -hex 32`).
 [DEPLOY.md](DEPLOY.md) explains each one.
 
-## What gagarin creates
+## What Gagarin creates
 
 | Name | Kind | Size | Holds |
 |---|---|---|---|
@@ -81,7 +81,7 @@ docker compose up --build
 gg destroy telegram-mcp
 ```
 
-gagarin emails the project owner a button to approve the deletion. End the
+Gagarin emails the project owner a button to approve the deletion. End the
 Telegram sessions under Settings → Devices in the Telegram app.
 
 ---

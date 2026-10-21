@@ -21,7 +21,7 @@ API creates its own schema on boot, so there is no migration step.
 Deploy the feed recipe from https://github.com/gagarin-cloud/recipes to Gagarin Cloud. Follow https://gagarin.cloud/recipes/feed
 ```
 
-## What gagarin creates
+## What Gagarin creates
 
 | Name | Kind | Size | Holds |
 |---|---|---|---|
@@ -43,7 +43,7 @@ gg deps add feed/web api
 gg domain add feed/web
 ```
 
-The postgres is called `pg` because the API reads `PG_URL`, and gagarin names
+The postgres is called `pg` because the API reads `PG_URL`, and Gagarin names
 the variables after the resource.
 
 ## What it costs
@@ -75,7 +75,7 @@ Then open http://localhost:8080.
 gg destroy feed
 ```
 
-gagarin emails the project owner a button to approve the deletion.
+Gagarin emails the project owner a button to approve the deletion.
 
 ---
 
@@ -182,10 +182,10 @@ $ docker compose up --build
 Then open <http://localhost:8080>. Compose brings up Postgres alongside the two
 services and waits for it to be healthy before starting the API. The database
 credentials in `docker-compose.yml` are local-only throwaways; in production
-`PG_URL` is injected by gagarin from the `pg` resource the API declares it
+`PG_URL` is injected by Gagarin from the `pg` resource the API declares it
 reaches — nothing copies it into the deploy.
 
-`TRUST_PROXY_HOPS` tells the API how many proxies sit in front of it — gagarin's
+`TRUST_PROXY_HOPS` tells the API how many proxies sit in front of it — Gagarin's
 ingress plus our own nginx, so it defaults to `2`. Counting hops from the right
 is what stops a caller forging `X-Forwarded-For` to shed their rate limit; set it
 to the real hop count if the deployment shape ever changes.

@@ -24,7 +24,7 @@ separate recipe, not this one.
 Deploy the remote-mcp-server recipe from https://github.com/gagarin-cloud/recipes to Gagarin Cloud, then connect it to me. Follow https://gagarin.cloud/recipes/remote-mcp-server
 ```
 
-## What gagarin creates
+## What Gagarin creates
 
 | Name | Kind | Size | Holds |
 |---|---|---|---|
@@ -43,7 +43,7 @@ gg domain add mcpdemo/mcp
 ```
 
 Make `.env.auth` with `echo "TOKEN=$(openssl rand -hex 32)" > .env.auth` and
-add it to `.gitignore`. gagarin publishes it as `AUTH_TOKEN`; the server
+add it to `.gitignore`. Gagarin publishes it as `AUTH_TOKEN`; the server
 refuses to start with a token shorter than 32 characters.
 
 Then connect, with the address `gg domain add` printed:
@@ -80,4 +80,4 @@ docker compose up --build
 gg destroy mcpdemo
 ```
 
-gagarin emails the project owner a button to approve the deletion.
+Gagarin emails the project owner a button to approve the deletion.

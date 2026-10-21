@@ -305,7 +305,7 @@ browser.
 
 **This is the one thing in the project that goes on the internet**, and the
 script says so as it happens. `gg domain add` gives it a generated
-`*.gagarin.cloud` address, which is instant and needs no DNS from you — gagarin
+`*.gagarin.cloud` address, which is instant and needs no DNS from you — Gagarin
 holds the wildcard record and the certificate. There is no login, by design: the
 same calls are already public in the Telegram channel, so a password on the
 website would protect nothing. Anyone with the link reads the book.
@@ -334,7 +334,7 @@ adding a column to the schema does not quietly put it on the internet.
 ### Why the worker has no address
 
 The worker makes only outbound calls. It listens on 8080 for one thing — a
-liveness endpoint (`src/health.ts`), because gagarin decides a service is ready
+liveness endpoint (`src/health.ts`), because Gagarin decides a service is ready
 by opening a connection to the port the deploy declared, and a container
 listening nowhere never becomes ready. Nothing else connects to it, and it never
 gets a domain.

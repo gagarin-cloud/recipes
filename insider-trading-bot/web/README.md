@@ -24,7 +24,7 @@ Three rules the code holds to, each for a reason worth knowing:
 - **A missing table is a state, not a crash.** On a fresh project nothing stops
   this service booting before the bot has ever run, so `lib/read.ts` checks
   `to_regclass` first and renders "no book yet". The other failure it names is a
-  database it cannot reach, which on gagarin is usually a missing `gg deps` edge
+  database it cannot reach, which on Gagarin is usually a missing `gg deps` edge
   — an undeclared call is *dropped* rather than refused, so it surfaces as a
   timeout rather than an error.
 - **Columns are named, never `SELECT *`.** `calls` carries `entry_price` and
@@ -99,7 +99,7 @@ times a week at most.
 
 ## Deploying
 
-`../deploy.sh` ships this as a second gagarin service, `web`, reaching the same
+`../deploy.sh` ships this as a second Gagarin service, `web`, reaching the same
 `db` resource and holding no other credentials. See "The website" in
 `../DEPLOY.md` — including how to keep it private if you would rather.
 

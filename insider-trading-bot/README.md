@@ -31,7 +31,7 @@ You need an OpenAI key with credit, a Telegram bot and channel, and free
 Finnhub and Marketaux keys. [DEPLOY.md](DEPLOY.md) lists each one and where to
 get it.
 
-## What gagarin creates
+## What Gagarin creates
 
 | Name | Kind | Size | Holds |
 |---|---|---|---|
@@ -55,7 +55,7 @@ gg domain add insider-bot/web
 
 ## What it costs
 
-About $32.16 a month on gagarin: three size-s containers at $10.22 each and
+About $32.16 a month on Gagarin: three size-s containers at $10.22 each and
 10 GB of disk at $1.50. OpenAI tokens come on top; DEPLOY.md measures them.
 Traffic is free. Rates: https://gagarin.cloud/pricing
 
@@ -82,7 +82,7 @@ docker compose up --build
 gg destroy insider-bot
 ```
 
-gagarin emails the project owner a button to approve the deletion.
+Gagarin emails the project owner a button to approve the deletion.
 
 ---
 
@@ -281,7 +281,7 @@ get each of the five API keys, how to wire up the Telegram bot, and deploying to
 Gagarin Cloud with `./deploy.sh`.
 
 `./deploy.sh` ships **two** services and one database: the private `bot` worker,
-and the `web` website, which it puts on a public gagarin address. `WEB_PUBLIC=0`
+and the `web` website, which it puts on a public Gagarin address. `WEB_PUBLIC=0`
 keeps the site private; `SKIP_WEB=1` does not ship it at all.
 
 Locally, or on any Docker host:

@@ -25,7 +25,7 @@ Deploy the telegram-bot-postgres-cron recipe from https://github.com/gagarin-clo
 You need a bot token from [@BotFather](https://t.me/BotFather). The agent asks
 you for it and keeps it out of the repository.
 
-## What gagarin creates
+## What Gagarin creates
 
 | Name | Kind | Size | Holds |
 |---|---|---|---|
@@ -48,7 +48,7 @@ gg run tgbot/digest bot:v1 --schedule "0 7 * * *" --env MODE=digest --deps db --
 gg status tgbot
 ```
 
-`.env.telegram` holds one line, `TOKEN=<your token>`, and gagarin publishes it
+`.env.telegram` holds one line, `TOKEN=<your token>`, and Gagarin publishes it
 as `TELEGRAM_TOKEN`. Add it to `.gitignore` before you write it.
 
 ## What it costs
@@ -80,4 +80,4 @@ docker compose run --rm digest
 gg destroy tgbot
 ```
 
-gagarin emails the project owner a button to approve the deletion.
+Gagarin emails the project owner a button to approve the deletion.
