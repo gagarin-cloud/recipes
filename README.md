@@ -40,10 +40,6 @@ CI does a dry run of every recipe and deploys nothing. It:
   Postgres or Qdrant;
 - checks every `gg` command in a README against the real CLI.
 
-`chit-chat` (called `feed` there), `telegram-mcp` and `read-and-trade-bot`
-(called `insider-trading-bot` there) moved here from `gagarin-cloud/fun` with
-their git history.
-
 ## License
 
 MIT. See [LICENSE](LICENSE).
