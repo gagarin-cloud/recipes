@@ -48,11 +48,15 @@ only the client can receive the authorization code at the end of it.
 ## 3. Get `gg` and an account
 
 ```bash
-brew install --cask gagarin-cloud/tap/gg   # or: go install github.com/gagarin-cloud/gg@latest
-gg login                                   # prints a link and a code; approve it in the browser
-gg login                                   # run again once approved: it collects the credential
-gg whoami                                  # should print your account
+curl -fsSL https://gagarin.cloud/install.sh | sh   # Windows PowerShell: irm https://gagarin.cloud/install.ps1 | iex
+gg login                                           # prints a link and a code; approve it in the browser
+gg login                                           # run again once approved: it collects the credential
+gg whoami                                          # should print your account
 ```
+
+Prefer a package manager? `brew install --cask gagarin-cloud/tap/gg`, scoop or
+winget, or `go install github.com/gagarin-cloud/gg@latest`; every route is at
+<https://github.com/gagarin-cloud/gg#install>. `gg upgrade` updates it later.
 
 Docker must be running: `gg` builds the image locally before pushing it.
 

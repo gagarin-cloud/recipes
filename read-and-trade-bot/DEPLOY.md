@@ -204,12 +204,17 @@ gg whoami
 If that names an account, skip ahead. If the command is not found:
 
 ```bash
-go install github.com/gagarin-cloud/gg@latest
+curl -fsSL https://gagarin.cloud/install.sh | sh
 ```
 
-No Go on the machine? Take a released binary for your platform from
-<https://github.com/gagarin-cloud/gg/releases> and verify the published checksum.
-Don't pipe a script from a URL into a shell.
+On Windows (PowerShell): `irm https://gagarin.cloud/install.ps1 | iex`. The script
+verifies the download against the release's checksums and installs to
+`~/.local/bin` without sudo. Prefer a package manager? `brew install --cask
+gagarin-cloud/tap/gg` (macOS), scoop or winget (Windows), `go install
+github.com/gagarin-cloud/gg@latest`, or a `.deb`/`.rpm`/`.apk` from
+<https://github.com/gagarin-cloud/gg/releases>. Every route:
+<https://github.com/gagarin-cloud/gg#install>. Later, `gg upgrade` brings it
+up to date.
 
 If it reports no credentials:
 
