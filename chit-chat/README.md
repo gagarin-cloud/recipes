@@ -202,6 +202,11 @@ web/     Static page and an nginx config that proxies /api/ to the API.
 The whole thing is about 900 lines. That's the point — most of the work of
 getting it online isn't in the code.
 
+Both images are also published to `ghcr.io/gagarin-cloud/recipes-chit-chat-api`
+and `-web` on every change here (`.github/workflows/samples.yml`). That is
+what the console's "Deploy chit-chat" button starts from: the engine copies a
+pinned digest into the project's own registry and deploys the copy.
+
 ---
 
 gagarin.cloud · open channel since orbit one
