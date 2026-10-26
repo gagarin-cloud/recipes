@@ -81,7 +81,7 @@ run() {
 say "Checking prerequisites"
 
 command -v gg >/dev/null 2>&1 || die \
-  "gg is not installed. See DEPLOY.md section 3, or: go install github.com/gagarin-cloud/gg@latest"
+  "gg is not installed. See DEPLOY.md section 3, or: curl -fsSL https://gagarin.cloud/install.sh | sh"
 
 # gg builds the image locally before pushing, so the daemon has to be up.
 command -v docker >/dev/null 2>&1 || die "docker is not installed; gg needs it to build the image."
