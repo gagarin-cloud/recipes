@@ -1,0 +1,184 @@
+/*
+ * One page, one column, two themes.
+ *
+ * Paper and ink in the light, a warm near-black at night, and a single blue
+ * for the one thing to press. The status colours are the only other hues, and
+ * each status is also written out in words, so the colour never carries the
+ * meaning alone.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-sunk: #efede7;
+  --border: #e2dfd6;
+  --border-strong: #cbc7bb;
+  --text: #1d1c19;
+  --muted: #69655c;
+  --faint: #8d897f;
+
+  --accent: #3f4fd8;
+  --accent-hover: #3442c2;
+  --accent-ink: #ffffff;
+  --accent-soft: #e9ebfc;
+  --focus: #3f4fd8;
+
+  --pending: #8a5a00;
+  --pending-bg: #fbf1dc;
+  --running: #2c47c9;
+  --running-bg: #e7ebfd;
+  --done: #1f6b3f;
+  --done-bg: #e1f2e7;
+  --failed: #a3261b;
+  --failed-bg: #fbe5e2;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --serif: ui-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* A 1.2 scale from a 1rem body. */
+  --step--2: 0.75rem;
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.2rem;
+  --step-2: 1.44rem;
+  --step-3: 1.728rem;
+  --step-4: clamp(2.4rem, 6vw + 1rem, 3.6rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgb(30 28 22 / 0.05), 0 6px 24px -12px rgb(30 28 22 / 0.18);
+
+  --measure: 44rem;
+  --gutter: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121311;
+    --surface: #1b1c1a;
+    --surface-sunk: #161715;
+    --border: #2b2c29;
+    --border-strong: #3b3c38;
+    --text: #ecebe6;
+    --muted: #a5a399;
+    --faint: #7d7b73;
+
+    --accent: #8d98ff;
+    --accent-hover: #a5aeff;
+    --accent-ink: #11132b;
+    --accent-soft: #23264a;
+    --focus: #a5aeff;
+
+    --pending: #f0c060;
+    --pending-bg: #33280f;
+    --running: #a5b4ff;
+    --running-bg: #1f2547;
+    --done: #7fd6a0;
+    --done-bg: #15301f;
+    --failed: #ff9a8f;
+    --failed-bg: #3a1714;
+
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 30px -14px rgb(0 0 0 / 0.7);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 var(--step-0) / 1.55 var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.shell {
+  width: 100%;
+  max-width: calc(var(--measure) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: var(--space-7) var(--gutter) var(--space-8);
+}
+
+.masthead {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.eyebrow {
+  font-size: var(--step--1);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.masthead h1 {
+  font: 500 var(--step-4) / 1 var(--serif);
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  max-width: 36rem;
+  font-size: var(--step-1);
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.colophon {
+  margin-top: var(--space-8);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+  font-size: var(--step--1);
+  color: var(--faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
