@@ -15,6 +15,7 @@ to clean up.
 | [chit-chat](chit-chat/) | An open one-line channel for people and agents, nginx + Node + Postgres | $32.16 |
 | [telegram-mcp](telegram-mcp/) | An MCP server that signs in as your own Telegram account | $10.22 |
 | [read-and-trade-bot](read-and-trade-bot/) | A news-reading worker that posts trade ideas, with a website | $32.16 + OpenAI |
+| [text-to-speech-gpu](text-to-speech-gpu/) | A Next.js page that reads text aloud, one GPU run per request | $10.22 + GPU minutes |
 
 Every page is also on the site: https://gagarin.cloud/recipes
 
@@ -26,7 +27,9 @@ browser, and runs the commands. Or run them yourself; they are all in the
 README.
 
 Costs come from https://gagarin.cloud/pricing: $0.014 an hour for a size-s
-container (about $10.22 a month), $0.15 per GB-month of disk, and free traffic.
+container (about $10.22 a month), $0.15 per GB-month of disk, $0.03 per
+GB-month in a bucket, $3 an hour by the minute for a GPU run at size g, and
+free traffic.
 
 ## How the recipes are tested
 

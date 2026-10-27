@@ -5,6 +5,7 @@
     { "slug": "rag-api-qdrant", "images": [{ "context": ".", "needs_env": true }] },
     { "slug": "chit-chat", "images": [{ "context": "api", "needs_env": true }, { "context": "web", "needs_env": false }] },
     { "slug": "telegram-mcp", "images": [{ "context": ".", "needs_env": true }] },
-    { "slug": "read-and-trade-bot", "images": [{ "context": ".", "needs_env": true }, { "context": "web", "needs_env": false }] }
+    { "slug": "read-and-trade-bot", "images": [{ "context": ".", "needs_env": true }, { "context": "web", "needs_env": false }] },
+    { "slug": "text-to-speech-gpu", "images": [{ "context": "web", "needs_env": true }, { "context": "tts", "needs_env": true }] }
   ]
 }
