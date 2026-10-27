@@ -1,0 +1,54 @@
+# The recipe on one machine, with no GPU and no Gagarin.
+#
+#   docker compose up --build          the bucket stand-in and the web, on :3000
+#   docker compose run --rm -e TEXT_KEY=<id> -e VOICE=af_heart tts
+#                                      speak one request, on the CPU
+#
+# Without a Gagarin token the web cannot start GPU runs, so Speak saves the
+# request to the bucket and each card shows the command above with its id
+# filled in. The job reads the request from the bucket, writes the audio back,
+# and the page plays it.
+
+x-bucket: &bucket
+  # The five variables `gg deps add ... files` hands over on Gagarin, pointed
+  # at the stand-in. It takes any key; these are not secrets.
+  FILES_ENDPOINT: http://files:9090
+  FILES_REGION: us-east-1
+  FILES_BUCKET: files
+  FILES_ACCESS_KEY_ID: local
+  FILES_SECRET_ACCESS_KEY: local-secret
+
+services:
+  # A local S3. Adobe's S3Mock creates the bucket on start and accepts any key.
+  # Objects survive `docker compose restart` and go with `docker compose down`.
+  files:
+    image: adobe/s3mock:5.2.3
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: files
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /tmp/s3
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: "true"
+    ports:
+      - "9090:9090"
+
+  web:
+    build: ./web
+    environment:
+      <<: *bucket
+      GAGARIN_PROJECT: speak
+      TTS_IMAGE: tts:v1
+      RUNS_PER_HOUR: "30"
+    depends_on:
+      - files
+    ports:
+      - "3000:3000"
+
+  # The job image. Behind a profile so `up` does not start it: it is run once
+  # per request, by hand, with `docker compose run`.
+  tts:
+    build: ./tts
+    image: tts:v1
+    profiles: [job]
+    environment:
+      <<: *bucket
+    depends_on:
+      - files

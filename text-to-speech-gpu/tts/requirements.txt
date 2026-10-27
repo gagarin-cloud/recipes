@@ -1,0 +1,14 @@
+# The speech model and its English text front end. Torch is not here: it comes
+# with the base image, built against the CUDA the image carries, and the
+# Dockerfile pins it so nothing below can replace it with a different build.
+kokoro==0.9.4
+misaki[en]==0.9.4
+# The English tagger the front end loads. Installed here so a run never tries to
+# download it (misaki fetches it at first use when it is missing).
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+boto3==1.43.119
+# What the four above resolved to when this image was last built and run, held
+# so a rebuild resolves the same set.
+transformers==5.21.0
+spacy==3.8.18
+huggingface-hub==2.3.0

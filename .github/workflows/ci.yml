@@ -38,6 +38,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # A CUDA image is about 8 GB unpacked, more than a runner has free by
+      # default. The runner's preinstalled SDKs are what this job never uses.
+      - name: Make room for a GPU image
+        if: matrix.recipe == 'text-to-speech-gpu'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af >/dev/null
+          df -h /
+
       - name: Build every image; the ones that need configuration refuse to start without it
         env:
           RECIPE: ${{ matrix.recipe }}
