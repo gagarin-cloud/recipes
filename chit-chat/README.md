@@ -46,6 +46,35 @@ gg domain add chit-chat/web
 The postgres is called `pg` because the API reads `PG_URL`, and Gagarin names
 the variables after the resource.
 
+## Deploy on every push
+
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) builds both
+images, tags them with the commit and deploys them on every push to `main`. It
+does not run in this repository, because GitHub only reads the workflows at a
+repository's root. Copy this directory into a repository of its own, dot files
+included, and the file is where GitHub looks:
+
+```
+cp -R recipes/chit-chat/. my-chit-chat/
+```
+
+1. Run the commands above once. They create the project, `pg`, the edges and
+   the address. The workflow only ships new images, and no deploy removes any
+   of those.
+2. Give the pipeline a credential of its own, piped straight into the
+   repository's secrets so it is never printed:
+
+   ```
+   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: <owner>/<repo>")"
+   ```
+
+3. Push to `main`.
+
+That credential can deploy but cannot destroy anything or mint another. It
+expires after 90 days (`--expires` allows up to 365). To rotate it, run the same
+line again to replace the secret, then `gg creds revoke` the old one by the ID
+`gg creds` lists (`gg creds create` prints the new one's).
+
 ## What it costs
 
 About $32.16 a month: three size-s containers at $10.22 each and 10 GB of disk
@@ -197,15 +226,19 @@ to the real hop count if the deployment shape ever changes.
 ```
 api/     Express + node-postgres. One file, no framework beyond express.
 web/     Static page and an nginx config that proxies /api/ to the API.
+.github/ The workflow that deploys on every push, for a copy of this directory.
 ```
 
 The whole thing is about 900 lines. That's the point — most of the work of
 getting it online isn't in the code.
 
 Both images are also published to `ghcr.io/gagarin-cloud/recipes-chit-chat-api`
-and `-web` on every change here (`.github/workflows/samples.yml`). That is
-what the console's "Deploy chit-chat" button starts from: the engine copies a
-pinned digest into the project's own registry and deploys the copy.
+and `-web` on every change here (`.github/workflows/samples.yml` at this
+repository's root). That is what the console's "Deploy chit-chat" button starts
+from: the engine copies a pinned digest into the project's own registry and
+deploys the copy. It is not a deploy to copy; that is
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) in this
+directory.
 
 ---
 

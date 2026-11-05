@@ -1,0 +1,76 @@
+name: deploy
+
+# Ships chit-chat to Gagarin on every push to main.
+#
+# This is the example to copy, and it does not run here: GitHub only reads the
+# workflows at a repository's root. Copy chit-chat/ into a repository of its
+# own and this file lands where GitHub looks.
+#
+# It only ships new images. The project, the pg database, the dependency edges
+# and the address come from running the README's commands once by hand, and no
+# deploy can take any of them away. It needs one secret, GAGARIN_TOKEN, a
+# credential minted for this pipeline:
+#
+#   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: <owner>/<repo>")"
+#
+# That credential can deploy and cannot destroy, and it expires (90 days by
+# default). The pipeline never runs gg login.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Two pushes in quick succession deploy one after the other, never over each
+# other.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # The project the README's commands created. A fork that named it something
+  # else changes this line and nothing more.
+  PROJECT: chit-chat
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # The credential belongs to this job alone, not to any job added later.
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install gg
+        run: |
+          curl -fsSL https://gagarin.cloud/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # Docker has no idea what a Gagarin credential is until this runs, and the
+      # push below fails with a 401 without it.
+      - name: Log docker in to the Gagarin registry
+        run: gg registry login
+
+      # Tagged with the commit, so every deploy says exactly which code it runs
+      # and a rollback names one.
+      - name: Build and publish both images
+        run: |
+          gg build "$PROJECT/api:${{ github.sha }}" --context ./api --push
+          gg build "$PROJECT/web:${{ github.sha }}" --context ./web --push
+
+      # A deploy replaces the environment, so PORT is said every time. PG_URL is
+      # not: Gagarin hands it to api from the pg edge.
+      - name: Release
+        run: |
+          gg deploy "$PROJECT/api:4000" "api:${{ github.sha }}" --env PORT=4000
+          gg deploy "$PROJECT/web:8080" "web:${{ github.sha }}"
+
+      # A report, not a gate: the deploy returned when Gagarin recorded it, and
+      # the new pods may still be starting.
+      - name: Say what Gagarin is doing
+        run: gg status "$PROJECT"
