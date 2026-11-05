@@ -41,8 +41,8 @@ CI does a dry run of every recipe and deploys nothing. It:
 - checks every `gg` command in a README against the real CLI;
 - lints the example deploy workflows (chit-chat has one, in
   `chit-chat/.github/workflows/`) and checks that each takes its credential from
-  the repository's secrets, never prints it, never runs `gg login` and tags
-  every build with the commit. The checks run here, but the workflows
+  the repository's secrets, names it and every other secret nowhere else, never
+  runs `gg login`, and tags every image it builds or deploys with the commit. The checks run here, but the workflows
   themselves only run once somebody copies the recipe into a repository of
   their own.
 

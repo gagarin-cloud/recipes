@@ -18,6 +18,9 @@ on:
     branches: [main]
     paths:
       - "chit-chat/**"
+      # Only what goes into the images: not the deploy example, not the docs.
+      - "!chit-chat/.github/**"
+      - "!chit-chat/**/*.md"
       - ".github/workflows/samples.yml"
   workflow_dispatch:
 

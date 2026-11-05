@@ -11,7 +11,7 @@ name: deploy
 # deploy can take any of them away. It needs one secret, GAGARIN_TOKEN, a
 # credential minted for this pipeline:
 #
-#   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: <owner>/<repo>" 2>/dev/null)"
+#   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: <owner>/<repo>")"
 #
 # That credential can deploy and cannot destroy, and it expires (90 days by
 # default). The pipeline never runs gg login.
@@ -34,13 +34,17 @@ env:
   # The project the README's commands created. A fork that named it something
   # else changes this line and nothing more.
   PROJECT: chit-chat
-  GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # The credential belongs to this job alone, not to any job added later.
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Install gg
         run: |

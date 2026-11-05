@@ -51,8 +51,12 @@ the variables after the resource.
 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) builds both
 images, tags them with the commit and deploys them on every push to `main`. It
 does not run in this repository, because GitHub only reads the workflows at a
-repository's root. Copy `chit-chat/` into a repository of its own and the file
-is where GitHub looks.
+repository's root. Copy this directory into a repository of its own, dot files
+included, and the file is where GitHub looks:
+
+```
+cp -R recipes/chit-chat/. my-chit-chat/
+```
 
 1. Run the commands above once. They create the project, `pg`, the edges and
    the address. The workflow only ships new images, and no deploy removes any
@@ -61,7 +65,7 @@ is where GitHub looks.
    repository's secrets so it is never printed:
 
    ```
-   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: <owner>/<repo>" 2>/dev/null)"
+   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: <owner>/<repo>")"
    ```
 
 3. Push to `main`.
@@ -69,7 +73,7 @@ is where GitHub looks.
 That credential can deploy but cannot destroy anything or mint another. It
 expires after 90 days (`--expires` allows up to 365). To rotate it, run the same
 line again to replace the secret, then `gg creds revoke` the old one by the ID
-`gg creds` lists.
+`gg creds` lists (`gg creds create` prints the new one's).
 
 ## What it costs
 
