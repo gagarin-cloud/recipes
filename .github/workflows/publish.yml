@@ -1,0 +1,68 @@
+name: publish
+
+# Ships chit-chat into the gagarin account's own `chit-chat` project and snaps
+# a new recipe version from it, on every change to what goes into the images.
+#
+# The project itself (pg, the dependency edges, the address) was created once
+# by hand with the commands in chit-chat/README.md. This workflow only ships
+# new images and snaps a recipe version; it creates and removes nothing.
+#
+# It needs one secret, GAGARIN_TOKEN, a credential a human minted for this
+# pipeline and stored as the repository secret:
+#
+#   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: gagarin-cloud/recipes")"
+#
+# Nothing here publishes to ghcr any more: the engine copies images between
+# registry spaces itself.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "chit-chat/**"
+      # Only what goes into the images: not the deploy example, not the docs.
+      - "!chit-chat/.github/**"
+      - "!chit-chat/**/*.md"
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chit-chat:
+    runs-on: ubuntu-latest
+    # The credential belongs to this job alone, not to any job added later.
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
+      PROJECT: chit-chat
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install gg
+        run: |
+          curl -fsSL https://gagarin.cloud/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Log docker in to the Gagarin registry
+        run: gg registry login
+
+      - name: Build and publish both images
+        run: |
+          gg build "$PROJECT/api:${{ github.sha }}" --context ./chit-chat/api --push
+          gg build "$PROJECT/web:${{ github.sha }}" --context ./chit-chat/web --push
+
+      # A deploy replaces the environment, so PORT is said every time.
+      - name: Release
+        run: |
+          gg deploy "$PROJECT/api:4000" "api:${{ github.sha }}" --env PORT=4000
+          gg deploy "$PROJECT/web:8080" "web:${{ github.sha }}"
+
+      - name: Say what Gagarin is doing
+        run: gg status "$PROJECT"
+
+      # No --version: the floor applies, and a digest-only change is a patch.
+      - name: Snap a recipe version
+        run: gg recipe snap "$PROJECT" --notes "recipes@${{ github.sha }}"

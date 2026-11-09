@@ -232,13 +232,12 @@ web/     Static page and an nginx config that proxies /api/ to the API.
 The whole thing is about 900 lines. That's the point — most of the work of
 getting it online isn't in the code.
 
-Both images are also published to `ghcr.io/gagarin-cloud/recipes-chit-chat-api`
-and `-web` on every change here (`.github/workflows/samples.yml` at this
-repository's root). That is what the console's "Deploy chit-chat" button starts
-from: the engine copies a pinned digest into the project's own registry and
-deploys the copy. It is not a deploy to copy; that is
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) in this
-directory.
+## Deploy with one click
+
+[![Deploy to Gagarin](https://gagarin.cloud/deploy-button.svg)](https://my.gagarin.cloud/deploy/<id>)
+
+The `<id>` is filled in after the first publish of this recipe. The console's
+Example tab deploys this same recipe.
 
 ---
 

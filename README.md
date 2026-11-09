@@ -46,6 +46,14 @@ CI does a dry run of every recipe and deploys nothing. It:
   themselves only run once somebody copies the recipe into a repository of
   their own.
 
+## How a recipe is published
+
+The `publish` workflow (`.github/workflows/publish.yml`) ships chit-chat into
+the gagarin account's own project and snaps a recipe version from it with
+`gg recipe snap`. The other recipes will follow once each has a project of its
+own. A recipe's README can carry the deploy badge that starts a deploy from its
+published version.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

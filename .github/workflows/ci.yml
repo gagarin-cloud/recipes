@@ -66,7 +66,7 @@ jobs:
         run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color ./*/.github/workflows/*.yml
 
       - name: The credential stays in the environment and images are tagged with the commit
-        run: .ci/deploy-example.sh ./*/.github/workflows/*.yml
+        run: .ci/deploy-example.sh ./*/.github/workflows/*.yml .github/workflows/publish.yml
 
       - name: That check refuses what it is meant to refuse
         run: .ci/deploy-example-test.sh chit-chat/.github/workflows/deploy.yml
