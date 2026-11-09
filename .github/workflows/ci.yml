@@ -74,7 +74,7 @@ jobs:
   commands:
     # Every `gg ...` in a README or an example deploy workflow must be a command
     # and flags gg actually has.
-    # The checker is the one claude-plugin runs against its skill.
+    # The checker is the one gagarin-cloud/plugin runs against its skills.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -87,7 +87,7 @@ jobs:
           go install github.com/gagarin-cloud/gg@latest
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
-      # On a pull request, the checker comes from claude-plugin's branch of the
+      # On a pull request, the checker comes from gagarin-cloud/plugin's branch of the
       # same name when there is one, so a change to the checker and its first
       # use can land together.
       - name: Resolve the checker's ref
@@ -96,16 +96,16 @@ jobs:
           BRANCH: ${{ github.head_ref }}
         run: |
           ref=main
-          if [ -n "$BRANCH" ] && git ls-remote --exit-code https://github.com/gagarin-cloud/claude-plugin "refs/heads/$BRANCH" >/dev/null; then
+          if [ -n "$BRANCH" ] && git ls-remote --exit-code https://github.com/gagarin-cloud/plugin "refs/heads/$BRANCH" >/dev/null; then
             ref="$BRANCH"
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v5
         with:
-          repository: gagarin-cloud/claude-plugin
+          repository: gagarin-cloud/plugin
           ref: ${{ steps.ref.outputs.ref }}
-          path: .claude-plugin-checkout
+          path: .plugin-checkout
 
       - name: Check the commands
-        run: python3 .claude-plugin-checkout/scripts/check_skill_against_gg.py ./*/README.md ./*/.github/workflows/*.yml
+        run: python3 .plugin-checkout/scripts/check_skill_against_gg.py ./*/README.md ./*/.github/workflows/*.yml
