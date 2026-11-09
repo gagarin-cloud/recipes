@@ -247,12 +247,12 @@ Some things it does that matter, and that you would have to remember by hand:
   plain env is visible to anyone who can read the project. Each credential goes
   into an *external* resource instead: `openai` (`API_KEY`), `telegram`
   (`BOT_TOKEN`, `CHANNEL_ID`), `finnhub` (`API_KEY`), `marketaux` (`API_KEY`)
-  and `sec` (`USER_AGENT`). The script writes one small `.env.<name>` file per
-  external from your `.env`, runs `gg resource add read-and-trade/<name> external
-  --env-file .env.<name>`, and deletes the files on exit. If you make them by
-  hand, e.g. `printf 'API_KEY=%s\n' "$OPENAI_API_KEY" > .env.openai`, gitignore
-  them. The worker then declares all five with `gg deps add read-and-trade/bot db
-  openai telegram finnhub marketaux sec`, and Gagarin publishes each variable as
+  and `sec` (`USER_AGENT`). The script writes one small env file per external
+  from your `.env` into a private temporary directory, creates each external from
+  its file (or rotates it, if it exists), and deletes the directory on exit. If
+  you make the files by hand, e.g.
+  `printf 'API_KEY=%s\n' "$OPENAI_API_KEY" > .env.openai`, gitignore them. The
+  worker's ship declares all five and `db` with `--deps`, and Gagarin publishes each variable as
   `<NAME>_<VAR>`: `OPENAI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`,
   `FINNHUB_API_KEY`, `MARKETAUX_API_KEY`, `SEC_USER_AGENT`. Those are the names
   `src/config.ts` already reads. Optional tuning keys from `.env`
@@ -260,18 +260,16 @@ Some things it does that matter, and that you would have to remember by hand:
   plain env, with `TZ=UTC` and `NODE_ENV=production`.
 
 - **It provisions a `postgres` resource called `db`, and declares that each
-  service reaches it.** That single `gg deps add` both opens the network route
+  service reaches it.** That single `--deps db` on the ship both opens the network route
   and hands the service its credentials as `DB_URL` — which is exactly the
   variable `src/config.ts` reads, so nothing has to be copied anywhere. The
   resource is created *before* the services, so neither boots into a window where
   its database does not exist.
 
-  The declaration is a separate call rather than `--deps` on the ship, and that
-  is deliberate: measured 2026-09-06, `gg ship --deps db` fails with
-  `[store_error] still in use` when the ship is *creating* the service. It works
-  on a service that already exists, so the bug only bites a first deploy. Both
-  services tolerate the short window before the edge lands — the worker retries
-  with backoff, and the website says so on the page.
+  The dependencies go on the ship itself, so the worker never starts without its
+  credentials. (On 2026-09-06 a ship that created its service refused `--deps`
+  with `[store_error] still in use`, and this script declared them afterwards;
+  the engine has accepted them since.)
 - **It strips `DB_URL` and the six credentials out of what it sends.** Your local `.env` points at a
   Postgres on your own machine, which the cluster cannot reach. It would be
   ignored anyway — a resource's injected variable outranks anything a deploy
@@ -467,12 +465,12 @@ To change a key, rotate its external; do not redeploy for it:
 
 ```bash
 gg resource rotate read-and-trade/openai --set API_KEY=<your new key>
-gg resource rotate read-and-trade/telegram --env-file .env.telegram
+gg resource rotate read-and-trade/telegram --set BOT_TOKEN=<your new token>
 ```
 
-`--set` changes one variable; `--env-file` restates the whole set, so a file for
-`telegram` must hold both `BOT_TOKEN` and `CHANNEL_ID`. Re-running `./deploy.sh`
-restates all five from `.env` the same way.
+`--set` changes one variable. `--env-file FILE` restates a whole external from a
+file you write, so a file for `telegram` must hold both `BOT_TOKEN` and
+`CHANNEL_ID`. Re-running `./deploy.sh` restates all five from `.env`.
 
 Postgres is dumped nightly and kept for fourteen days, which is the one real
 durability gain over the SQLite file: there was no backup of that at all. A

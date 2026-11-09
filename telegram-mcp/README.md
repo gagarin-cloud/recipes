@@ -18,10 +18,10 @@ private chats.
 What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
 
 - `client` (outside Gagarin, your MCP client) → `mcp`
-- `mcp` (service, :8080 · OAuth, public address) → `telegram`, `encryption`
-- `telegram` (outside Gagarin, MTProto)
-- `telegram` (external, API_ID, API_HASH)
-- `encryption` (external, KEY)
+- `mcp` (service, :8080 · OAuth, public address) → `telegram`, `encryption`, `mtproto`
+- `telegram` (external, TELEGRAM_API_ID, TELEGRAM_API_HASH)
+- `encryption` (external, ENCRYPTION_KEY)
+- `mtproto` (outside Gagarin, Telegram's API)
 
 The server is its own OAuth authorization server, and Telegram is its user
 database. You add it as a connector, sign in to Telegram on its page (QR code
@@ -60,10 +60,10 @@ gg deploy telegram-mcp/mcp:8080 mcp:<tag> --env PORT=8080 --env TZ=UTC --env NOD
 ```
 
 `.env.telegram` holds `API_ID` and `API_HASH`; `.env.encryption` holds `KEY`.
-For example `printf 'KEY=%s\n' "$ENCRYPTION_KEY" > .env.encryption`.
-`./deploy.sh` makes both from `.env` for you and deletes them afterwards. If you
-make them by hand, keep them out of git. Gagarin publishes them to `mcp` as
-`TELEGRAM_API_ID`, `TELEGRAM_API_HASH` and `ENCRYPTION_KEY`.
+For example `printf 'KEY=%s\n' "$ENCRYPTION_KEY" > .env.encryption`. Keep them
+out of git. `./deploy.sh` writes the same files from `.env` into a private
+temporary directory instead, and deletes it when it finishes. Gagarin publishes
+them to `mcp` as `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` and `ENCRYPTION_KEY`.
 
 The second deploy is the same image again, told its own address: the address
 is the OAuth issuer, and it does not exist until `gg domain add` runs.

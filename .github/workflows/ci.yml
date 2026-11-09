@@ -75,6 +75,9 @@ jobs:
       - name: publish.yml republishes the recipes a push changed, and only those
         run: .ci/changed-recipes-test.sh
 
+      - name: The deploy scripts put credentials in externals, never in a deploy
+        run: .ci/deploy-keeps-secrets-test.sh
+
   commands:
     # Every `gg ...` in a README or an example deploy workflow must be a command
     # and flags gg actually has.

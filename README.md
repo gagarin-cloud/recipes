@@ -43,6 +43,8 @@ CI does a dry run of every recipe and deploys nothing. It:
 - runs the first four against local stand-ins: a fake Telegram, a local
   Postgres or Qdrant;
 - checks every `gg` command in a README against the real CLI;
+- runs the deploy scripts that hold credentials against a fake `gg`, and fails
+  if a credential reaches a service's environment rather than an external;
 - lints the example deploy workflows (chit-chat has one, in
   `chit-chat/.github/workflows/`) and this repository's own publish workflow,
   and checks that each takes its credential from
@@ -59,8 +61,10 @@ values in its externals, since a recipe carries an external's variable names
 and never its values.
 
 The `publish` workflow (`.github/workflows/publish.yml`) keeps them current. On
-a push to `main`, `.ci/changed-recipes.sh` lists the recipes whose images the
-push changed: anything in the directory but Markdown and its example workflow.
+a push to `main`, `.ci/changed-recipes.sh` lists the recipes whose images
+changed since the last publish that succeeded in full: anything in the
+directory but Markdown and its example workflow. So a failed job is retried by
+the next push.
 For each, the workflow builds the images tagged with the commit, deploys them
 into that recipe's project, and snaps a new version with `gg recipe snap`. Its
 notes, which the deploy page shows, come from the recipe's `recipe-notes.txt`.

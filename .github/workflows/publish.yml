@@ -43,17 +43,28 @@ on:
 permissions:
   contents: read
 
-# One publish at a time, and a queued one waits rather than cancels, so the
-# newest commit is the last one snapped.
+# One publish at a time. GitHub keeps at most one run waiting and a newer push
+# replaces it; nothing is lost by that, because each run publishes everything
+# changed since the last run that succeeded in full, not since the push before.
 concurrency:
   group: publish
   cancel-in-progress: false
 
 jobs:
-  # Which recipes this push changed, as a JSON array of directory names; all
-  # of them on a manual run. .ci/changed-recipes.sh says what counts.
+  # Which recipes changed since the last run that published everything it set
+  # out to, as a JSON array of slugs; all of them on a manual run. A recipe
+  # whose job failed, or whose push was replaced in the queue, is published
+  # by the next run. .ci/changed-recipes.sh says what counts.
+  #
+  # main only: a manual run from a branch would snap unmerged code into the
+  # recipes every badge installs. Every other job needs this one, so they are
+  # skipped with it.
   changes:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     outputs:
       recipes: ${{ steps.diff.outputs.recipes }}
     steps:
@@ -61,9 +72,17 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - id: base
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow publish.yml --branch main \
+            --status success --limit 1 --json headSha --jq '.[0].headSha // ""')
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - id: diff
         env:
-          BEFORE: ${{ github.event_name == 'push' && github.event.before || '' }}
+          BEFORE: ${{ steps.base.outputs.sha }}
         run: echo "recipes=$(.ci/changed-recipes.sh "$BEFORE" "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
 
   chit-chat:

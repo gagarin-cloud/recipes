@@ -18,11 +18,11 @@ What Gagarin creates, and what may reach what. An arrow is a dependency edge: th
 - `bot` (service, worker, :8080 health, private) → `db`, `openai`, `telegram`, `finnhub`, `marketaux`, `sec`
 - `web` (service, Next.js, :3000, public address) → `db`
 - `db` (Postgres, 10 GB disk)
-- `openai` (external, API_KEY)
-- `telegram` (external, BOT_TOKEN, CHANNEL_ID)
-- `finnhub` (external, API_KEY)
-- `marketaux` (external, API_KEY)
-- `sec` (external, USER_AGENT)
+- `openai` (external, OPENAI_API_KEY)
+- `telegram` (external, TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID)
+- `finnhub` (external, FINNHUB_API_KEY)
+- `marketaux` (external, MARKETAUX_API_KEY)
+- `sec` (external, SEC_USER_AGENT)
 
 The worker calls OpenAI, SEC EDGAR, Finnhub, Marketaux and Telegram. The
 website reads the same database and writes nothing.
@@ -62,18 +62,16 @@ gg resource add read-and-trade/telegram external --env-file .env.telegram
 gg resource add read-and-trade/finnhub external --env-file .env.finnhub
 gg resource add read-and-trade/marketaux external --env-file .env.marketaux
 gg resource add read-and-trade/sec external --env-file .env.sec
-gg ship read-and-trade/bot:8080 --size s --env TZ=UTC --env NODE_ENV=production
-gg deps add read-and-trade/bot db openai telegram finnhub marketaux sec
-gg ship read-and-trade/web:3000 --context ./web --size s --env TZ=UTC --env NODE_ENV=production
-gg deps add read-and-trade/web db
+gg ship read-and-trade/bot:8080 --size s --env TZ=UTC --env NODE_ENV=production --deps db --deps openai --deps telegram --deps finnhub --deps marketaux --deps sec
+gg ship read-and-trade/web:3000 --context ./web --size s --env TZ=UTC --env NODE_ENV=production --deps db
 gg domain add read-and-trade/web
 ```
 
 Each `.env.<name>` file holds one external's own variable names, for example
 `printf 'API_KEY=%s\n' "$OPENAI_API_KEY" > .env.openai`. `.env.telegram` holds
-`BOT_TOKEN` and `CHANNEL_ID`; `.env.sec` holds `USER_AGENT`. `./deploy.sh` makes
-them from `.env` for you and deletes them afterwards. If you make them by hand,
-keep them out of git.
+`BOT_TOKEN` and `CHANNEL_ID`; `.env.sec` holds `USER_AGENT`. Keep them out of
+git. `./deploy.sh` writes the same files from `.env` into a private temporary
+directory instead, and deletes it when it finishes.
 
 Gagarin publishes an external's variables to the services that depend on it as
 `<NAME>_<VAR>`: `openai` holding `API_KEY` becomes `OPENAI_API_KEY`, which is

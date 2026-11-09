@@ -5,11 +5,12 @@ Everything this needs, where each value comes from, and what it costs.
 ## 1. The `.env` file
 
 `.env` is yours and stays local. The credentials in it never go on the service's
-own environment: `deploy.sh` writes `.env.telegram` (`API_ID`, `API_HASH`) and
-`.env.encryption` (`KEY`) from it, creates two external resources, `telegram`
-and `encryption`, from those files, and deletes the files on exit. The service
-depends on both, and Gagarin publishes them as `TELEGRAM_API_ID`,
-`TELEGRAM_API_HASH` and `ENCRYPTION_KEY`. To make the files by hand, use
+own environment: `deploy.sh` writes one env file per external from it into a
+private temporary directory, `telegram` (`API_ID`, `API_HASH`) and
+`encryption` (`KEY`), creates or rotates the two external resources from them,
+and deletes the directory on exit. The service depends on both, and Gagarin
+publishes them as `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` and `ENCRYPTION_KEY`.
+To make the files by hand, use
 `printf 'KEY=%s\n' "$ENCRYPTION_KEY" > .env.encryption` and keep them out of
 git.
 
@@ -131,8 +132,8 @@ gg status telegram-mcp          # what is actually running, and its address
 gg rollback telegram-mcp/mcp    # back to the previous image
 ```
 
-- **Rotating `ENCRYPTION_KEY`:** rotate its external, with the new value in a
-  file: `gg resource rotate telegram-mcp/encryption --env-file .env.encryption`.
+- **Rotating `ENCRYPTION_KEY`:** rotate its external:
+  `gg resource rotate telegram-mcp/encryption --set KEY=<new key>`.
   Every connector's tokens stop decrypting, so everyone signs in again — which is
   also the emergency stop if you ever think a token leaked. Re-running
   `./deploy.sh` restates it from `.env` the same way.

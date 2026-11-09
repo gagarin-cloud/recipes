@@ -43,7 +43,16 @@ EXTERNALS=(
   "telegram API_HASH TELEGRAM_API_HASH"
   "encryption KEY ENCRYPTION_KEY"
 )
-EXTERNAL_NAMES=(telegram encryption)
+# Each external once, in order, from the list above, so a line added there is
+# created, restated and depended on without a second list to forget.
+EXTERNAL_NAMES=()
+DEPS_ARGS=()
+for entry in "${EXTERNALS[@]}"; do
+  read -r ext _ _ <<< "$entry"
+  [[ " ${EXTERNAL_NAMES[*]-} " == *" $ext "* ]] && continue
+  EXTERNAL_NAMES+=("$ext")
+  DEPS_ARGS+=(--deps "$ext")
+done
 
 say()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m warn:\033[0m %s\n' "$*" >&2; }
@@ -208,13 +217,13 @@ ship() {
   local public_url="$1"
   run gg ship "$PROJECT/$SERVICE:$PORT" \
     --size "$SIZE" \
-    "${volume_args[@]}" \
+    ${volume_args[@]+"${volume_args[@]}"} \
     --env-file "$RENDERED_ENV" \
     --env "PUBLIC_URL=$public_url" \
     --env "PORT=$PORT" \
     --env "TZ=UTC" \
     --env "NODE_ENV=production" \
-    --deps telegram --deps encryption
+    "${DEPS_ARGS[@]}"
 }
 
 say "Building and shipping (~2 min; longer on the first run)"
@@ -247,7 +256,7 @@ elif [[ -z "$ADDRESS" ]]; then
     say "Telling it its own address (https://$ADDRESS) and redeploying that image"
     run gg deploy "$PROJECT/$SERVICE:$PORT" "$IMAGE" \
       --size "$SIZE" \
-      "${volume_args[@]}" \
+      ${volume_args[@]+"${volume_args[@]}"} \
       --env-file "$RENDERED_ENV" \
       --env "PUBLIC_URL=https://$ADDRESS" \
       --env "PORT=$PORT" \

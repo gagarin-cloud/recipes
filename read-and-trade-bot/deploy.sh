@@ -81,7 +81,13 @@ EXTERNALS=(
   "marketaux API_KEY MARKETAUX_API_KEY"
   "sec USER_AGENT SEC_USER_AGENT"
 )
-EXTERNAL_NAMES=(openai telegram finnhub marketaux sec)
+# Each external once, in order, from the list above, so a line added there is
+# created, restated and depended on without a second list to forget.
+EXTERNAL_NAMES=()
+for entry in "${EXTERNALS[@]}"; do
+  read -r ext _ _ <<< "$entry"
+  [[ " ${EXTERNAL_NAMES[*]-} " == *" $ext "* ]] || EXTERNAL_NAMES+=("$ext")
+done
 
 say()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m warn:\033[0m %s\n' "$*" >&2; }
@@ -281,41 +287,29 @@ fi
 # merging, so the full set is passed every time. A variable omitted here is a
 # variable removed from the running service.
 #
-# DB_URL is the exception and is deliberately absent: it comes from the postgres
-# resource via --deps, and a resource's injected variable outranks anything a
-# deploy sets. Passing one here would be ignored, so it is not passed.
+# DB_URL and the six credentials are the exception and are deliberately
+# absent: they come from the postgres and the externals via --deps, and a
+# resource's injected variable outranks anything a deploy sets.
 #
-# The dependency edge is declared AFTER the ship, not with --deps on it.
-#
-# Measured 2026-09-06: `gg ship <project>/<service> --deps db` fails with
-# `[store_error] still in use` when the ship is *creating* the service. It
-# succeeds on a service that already exists, which is why this only bites a first
-# deploy — the worst possible time to discover it. Shipping bare and then calling
-# `gg deps add` works in both cases and is idempotent.
-#
-# The cost is a short window where a brand new service is running without the
-# database credentials. Both services here tolerate that: the worker retries with
-# backoff (src/db/index.ts) and the website renders "database unreachable" until
-# the edge lands, at which point gagarin re-renders the pod with DB_URL present.
+# The dependencies go on the ship itself, so the worker never starts without
+# its credentials: it zod-parses them at boot and exits without them. (A ship
+# that created its service used to refuse --deps with `[store_error] still in
+# use`, measured 2026-09-06; the engine has accepted them since, and core's
+# TestAFirstDeployCanDeclareItsDependencies holds it to that.)
 ship_args=(
   ship "$PROJECT/$SERVICE:$PORT"
   --size "$SIZE"
   --env-file "$RENDERED_ENV"
   --env "TZ=UTC"
   --env "NODE_ENV=production"
+  --deps "$DB_RESOURCE"
 )
+for ext in "${EXTERNAL_NAMES[@]}"; do ship_args+=(--deps "$ext"); done
 
 # Roughly 2 minutes once the base image is cached; the first run also pulls
 # node:22-bookworm-slim. Nothing is compiled — see the Dockerfile header.
 say "Building and shipping (~2 min; longer on the first run while the base image downloads)"
 run gg "${ship_args[@]}"
-
-# Only ever adds, so this is a no-op on a redeploy and repairs the edge if
-# someone removed it. An undeclared call to a database is dropped rather than
-# refused, which surfaces as a connection that hangs rather than one that fails —
-# so it is worth restating every run.
-say "Declaring that '$SERVICE' reaches '$DB_RESOURCE' and its credentials"
-run gg deps add "$PROJECT/$SERVICE" "$DB_RESOURCE" "${EXTERNAL_NAMES[@]}"
 
 # ------------------------------------------------------------------ the website
 
@@ -341,10 +335,8 @@ if [[ -z "${SKIP_WEB:-}" ]]; then
     --context ./web \
     --size "$WEB_SIZE" \
     --env "TZ=UTC" \
-    --env "NODE_ENV=production"
-
-  say "Declaring that '$WEB_SERVICE' reaches '$DB_RESOURCE'"
-  run gg deps add "$PROJECT/$WEB_SERVICE" "$DB_RESOURCE"
+    --env "NODE_ENV=production" \
+    --deps "$DB_RESOURCE"
 
   # This is the step that puts the calls on the internet, so it says so rather
   # than happening quietly. The generated gagarin address is idempotent and
