@@ -4,6 +4,15 @@ Everything this needs, where each value comes from, and what it costs.
 
 ## 1. The `.env` file
 
+`.env` is yours and stays local. The credentials in it never go on the service's
+own environment: `deploy.sh` writes `.env.telegram` (`API_ID`, `API_HASH`) and
+`.env.encryption` (`KEY`) from it, creates two external resources, `telegram`
+and `encryption`, from those files, and deletes the files on exit. The service
+depends on both, and Gagarin publishes them as `TELEGRAM_API_ID`,
+`TELEGRAM_API_HASH` and `ENCRYPTION_KEY`. To make the files by hand, use
+`printf 'KEY=%s\n' "$ENCRYPTION_KEY" > .env.encryption` and keep them out of
+git.
+
 ```bash
 cp .env.example .env
 ```
@@ -13,7 +22,7 @@ cp .env.example .env
 | `TELEGRAM_API_ID` | yes | <https://my.telegram.org> → *API development tools* → create an app | free |
 | `TELEGRAM_API_HASH` | yes | same page | free |
 | `ENCRYPTION_KEY` | yes | `openssl rand -hex 32` | free |
-| `PUBLIC_URL` | no | `deploy.sh` sets it to the deployed address; defaults to `http://localhost:$PORT` | — |
+| `PUBLIC_URL` | no | `deploy.sh` sets it to the deployed address as plain env on the service; defaults to `http://localhost:$PORT` | — |
 | `ACCOUNT_IDLE_MINUTES`, `MAX_ACCOUNTS` | no | how long accounts stay connected and how many at once | — |
 | `RATE_LIMIT_*` | no | see the README; defaults are deliberately conservative | — |
 
@@ -66,7 +75,7 @@ Docker must be running: `gg` builds the image locally before pushing it.
 ./deploy.sh
 ```
 
-It creates the project, builds and ships the image, gives the service a public
+It creates the project, holds the credentials in the two externals, builds and ships the image, gives the service a public
 address, and — because that address is the OAuth issuer and has to be baked in —
 redeploys the same image once with `PUBLIC_URL` set to it. Later runs already
 know the address and ship once.
@@ -122,9 +131,19 @@ gg status telegram-mcp          # what is actually running, and its address
 gg rollback telegram-mcp/mcp    # back to the previous image
 ```
 
-- **Rotating `ENCRYPTION_KEY`:** change it in `.env` and redeploy. Every
-  connector's tokens stop decrypting, so everyone reconnects — which is also the
-  emergency stop if you ever think a token leaked.
+- **Rotating `ENCRYPTION_KEY`:** rotate its external, with the new value in a
+  file: `gg resource rotate telegram-mcp/encryption --env-file .env.encryption`.
+  Every connector's tokens stop decrypting, so everyone signs in again — which is
+  also the emergency stop if you ever think a token leaked. Re-running
+  `./deploy.sh` restates it from `.env` the same way.
+- **After a one-click install:** the recipe installs without `PUBLIC_URL`, which
+  is the address of whoever deployed it, so sign-in fails until it is set. Deploy
+  the installed image once, restating the plain env, with `<image>` and
+  `<address>` as `gg status <project>` prints them:
+
+  ```bash
+  gg deploy <project>/mcp:8080 <image> --env PORT=8080 --env TZ=UTC --env NODE_ENV=production --env PUBLIC_URL=https://<address>
+  ```
 - **Signing an account out:** from the Telegram app, Settings → Devices, end the
   session. Removing the connector in Claude does the same thing from the other
   end: it calls OAuth revocation, which this server implements by logging that

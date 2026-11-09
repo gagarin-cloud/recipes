@@ -5,6 +5,8 @@ to a question. It is the retrieval half of RAG: pass what `/ask` returns to
 your model of choice for the answer. Page:
 https://gagarin.cloud/recipes/rag-api-qdrant
 
+[![Deploy to Gagarin Cloud](https://my.gagarin.cloud/deploy/lzed09ck/badge.svg)](https://my.gagarin.cloud/deploy/lzed09ck)
+
 ## What you build
 
 What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.

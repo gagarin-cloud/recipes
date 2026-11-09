@@ -64,6 +64,25 @@ REQUIRED_KEYS=(
   SEC_USER_AGENT
 )
 
+# Where each of them lives on gagarin: an external resource, never the
+# service's own environment. A deploy's environment is plain configuration that
+# anybody reading the project (or a recipe snapped from it) can see; an
+# external holds the values and hands them only to what declares it needs them.
+#
+# The names are load-bearing the same way `db` is: gagarin publishes an
+# external's values under its own name, so `openai` holding API_KEY is what puts
+# OPENAI_API_KEY in the worker's environment. Each line is
+# "<external> <its variable> <the variable src/config.ts reads>".
+EXTERNALS=(
+  "openai API_KEY OPENAI_API_KEY"
+  "telegram BOT_TOKEN TELEGRAM_BOT_TOKEN"
+  "telegram CHANNEL_ID TELEGRAM_CHANNEL_ID"
+  "finnhub API_KEY FINNHUB_API_KEY"
+  "marketaux API_KEY MARKETAUX_API_KEY"
+  "sec USER_AGENT SEC_USER_AGENT"
+)
+EXTERNAL_NAMES=(openai telegram finnhub marketaux sec)
+
 say()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m warn:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -161,11 +180,16 @@ fi
 #      injects the real DB_URL from the postgres resource, and an injected
 #      variable outranks anything a deploy passes — so sending ours would be
 #      ignored anyway. Better not to have a stale credential in the call at all.
+#   4. The six credentials are removed too. They go into the externals below,
+#      one small file each, so the deploy itself carries only tuning.
 #
-# Written 0600 and deleted on exit: it holds every credential in the clear.
-RENDERED_ENV="$(mktemp -t read-and-trade-env.XXXXXX)"
-chmod 600 "$RENDERED_ENV"
-trap 'rm -f "$RENDERED_ENV"' EXIT
+# Every file is written 0600 and deleted on exit: the external ones hold
+# credentials in the clear.
+WORK="$(mktemp -d -t read-and-trade.XXXXXX)"
+chmod 700 "$WORK"
+trap 'rm -rf "$WORK"' EXIT
+RENDERED_ENV="$WORK/deploy.env"
+( umask 077; : > "$RENDERED_ENV" )
 
 while IFS= read -r line; do
   [[ "$line" =~ ^[[:space:]]*# ]] && continue
@@ -177,6 +201,8 @@ while IFS= read -r line; do
 
   # Injected by gagarin, or set explicitly below; never take these from the file.
   [[ "$key" == "DB_URL" || "$key" == "TZ" || "$key" == "NODE_ENV" ]] && continue
+  # A credential: it goes into its external, not into the deploy.
+  [[ " ${REQUIRED_KEYS[*]} " == *" $key "* ]] && continue
 
   # Strip one layer of matching quotes, then trailing whitespace.
   val="$(printf '%s' "$val" | sed -E 's/^[[:space:]]*//; s/[[:space:]]*$//; s/^"(.*)"$/\1/; s/^'"'"'(.*)'"'"'$/\1/')"
@@ -185,6 +211,12 @@ while IFS= read -r line; do
 done < "$ENV_FILE"
 
 say "Prepared $(wc -l < "$RENDERED_ENV" | tr -d ' ') environment variables"
+
+# One file per external, holding that external's own names.
+for entry in "${EXTERNALS[@]}"; do
+  read -r ext var key <<< "$entry"
+  ( umask 077; printf '%s=%s\n' "$var" "$(env_value "$key")" >> "$WORK/$ext.env" )
+done
 
 # ------------------------------------------------------------ create the project
 
@@ -205,6 +237,26 @@ fi
 # a window where its database does not exist.
 say "Provisioning postgres '$PROJECT/$DB_RESOURCE' (${DB_STORAGE}GB, size $DB_SIZE)"
 run gg resource add "$PROJECT/$DB_RESOURCE" postgres --size "$DB_SIZE" --storage "$DB_STORAGE"
+
+# ------------------------------------------------------------ the credentials
+
+# Created on the first run; on a later one the values are restated from .env
+# with `gg resource rotate`, which is how an external's values change. Either
+# way the values travel in a file, never on the command line.
+external_exists() {
+  gg status "$PROJECT" 2>/dev/null \
+    | sed -E 's/^[[:space:]]*[●○◆][[:space:]]*//' \
+    | awk -v s="$1" '$1 == s && $2 == "external"' | grep -q .
+}
+for ext in "${EXTERNAL_NAMES[@]}"; do
+  if external_exists "$ext"; then
+    say "Restating the credentials in '$PROJECT/$ext'"
+    run gg resource rotate "$PROJECT/$ext" --env-file "$WORK/$ext.env"
+  else
+    say "Holding the credentials in a new external '$PROJECT/$ext'"
+    run gg resource add "$PROJECT/$ext" external --env-file "$WORK/$ext.env"
+  fi
+done
 
 # Probe for the service so the first deploy can be told apart from a redeploy.
 # The row is read from `gg status`, stripping the ●/○ health marker so the
@@ -262,16 +314,17 @@ run gg "${ship_args[@]}"
 # someone removed it. An undeclared call to a database is dropped rather than
 # refused, which surfaces as a connection that hangs rather than one that fails —
 # so it is worth restating every run.
-say "Declaring that '$SERVICE' reaches '$DB_RESOURCE'"
-run gg deps add "$PROJECT/$SERVICE" "$DB_RESOURCE"
+say "Declaring that '$SERVICE' reaches '$DB_RESOURCE' and its credentials"
+run gg deps add "$PROJECT/$SERVICE" "$DB_RESOURCE" "${EXTERNAL_NAMES[@]}"
 
 # ------------------------------------------------------------------ the website
 
 # A second service out of ./web, reaching the same postgres.
 #
-# It gets no --env-file. The site reads three tables and calls nothing; giving it
-# the OpenAI and Telegram credentials would put every key this project holds
-# inside the one container that answers requests from the internet. DB_URL is not
+# It gets no --env-file and reaches no external. The site reads three tables and
+# calls nothing; giving it the OpenAI and Telegram credentials would put every
+# key this project holds inside the one container that answers requests from
+# the internet. DB_URL is not
 # passed either, for the same reason it is not passed to the worker: --deps is
 # what supplies it.
 if [[ -z "${SKIP_WEB:-}" ]]; then

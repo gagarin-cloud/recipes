@@ -29,6 +29,22 @@ ENV_FILE="${ENV_FILE:-.env}"
 
 REQUIRED_KEYS=(TELEGRAM_API_ID TELEGRAM_API_HASH ENCRYPTION_KEY)
 
+# Where those three live on gagarin: external resources, never the service's own
+# environment. A deploy's environment is plain configuration that anybody
+# reading the project (or a recipe snapped from it) can see; an external holds
+# the values and hands them only to what declares it needs them.
+#
+# The names are load-bearing: gagarin publishes an external's values under its
+# own name, so `telegram` holding API_ID is what puts TELEGRAM_API_ID in the
+# server's environment. Each line is
+# "<external> <its variable> <the variable src/config.ts reads>".
+EXTERNALS=(
+  "telegram API_ID TELEGRAM_API_ID"
+  "telegram API_HASH TELEGRAM_API_HASH"
+  "encryption KEY ENCRYPTION_KEY"
+)
+EXTERNAL_NAMES=(telegram encryption)
+
 say()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m warn:\033[0m %s\n' "$*" >&2; }
 die()  { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -89,13 +105,17 @@ fi
 
 # ------------------------------------------- build the environment gg will send
 
-# Rewritten rather than passed straight through: .env may quote its values, and
-# PUBLIC_URL must be the deployed address rather than whatever a local run used.
-# Written 0600 and deleted on exit — it holds the encryption key.
-RENDERED_ENV="$(mktemp -t telegram-mcp-env.XXXXXX)"
-chmod 600 "$RENDERED_ENV"
-SHIP_LOG="$(mktemp -t telegram-mcp-ship.XXXXXX)"
-trap 'rm -f "$RENDERED_ENV" "$SHIP_LOG"' EXIT
+# Rewritten rather than passed straight through: .env may quote its values,
+# PUBLIC_URL must be the deployed address rather than whatever a local run used,
+# and the three credentials go into their externals rather than the deploy.
+# Every file is written 0600 and deleted on exit — the external ones hold the
+# encryption key and the Telegram app's secret.
+WORK="$(mktemp -d -t telegram-mcp.XXXXXX)"
+chmod 700 "$WORK"
+trap 'rm -rf "$WORK"' EXIT
+RENDERED_ENV="$WORK/deploy.env"
+SHIP_LOG="$WORK/ship.log"
+( umask 077; : > "$RENDERED_ENV" )
 
 while IFS= read -r line; do
   [[ "$line" =~ ^[[:space:]]*# ]] && continue
@@ -107,6 +127,8 @@ while IFS= read -r line; do
 
   # Set explicitly below; never taken from the file.
   [[ "$k" == "PUBLIC_URL" || "$k" == "PORT" || "$k" == "TZ" || "$k" == "NODE_ENV" ]] && continue
+  # A credential: it goes into its external, not into the deploy.
+  [[ " ${REQUIRED_KEYS[*]} " == *" $k "* ]] && continue
 
   v="$(printf '%s' "$v" | sed -E 's/^[[:space:]]*//; s/[[:space:]]*$//; s/^"(.*)"$/\1/; s/^'"'"'(.*)'"'"'$/\1/')"
   [[ -z "$v" ]] && continue
@@ -116,6 +138,12 @@ done < "$ENV_FILE"
 
 say "Prepared $(wc -l < "$RENDERED_ENV" | tr -d ' ') environment variables"
 
+# One file per external, holding that external's own names.
+for entry in "${EXTERNALS[@]}"; do
+  read -r ext var envkey <<< "$entry"
+  ( umask 077; printf '%s=%s\n' "$var" "$(env_value "$envkey")" >> "$WORK/$ext.env" )
+done
+
 # ------------------------------------------------------------ create the project
 
 if gg projects 2>/dev/null | awk '{print $1}' | grep -qx "$PROJECT"; then
@@ -124,6 +152,29 @@ else
   say "Creating project '$PROJECT'"
   run gg init "$PROJECT"
 fi
+
+# ------------------------------------------------------------ the credentials
+
+# Created on the first run; on a later one the values are restated from .env
+# with `gg resource rotate`, which is how an external's values change. Either
+# way the values travel in a file, never on the command line.
+#
+# Rotating ENCRYPTION_KEY signs every connected account out: the tokens clients
+# hold were encrypted with the old one. Restating the same value changes nothing.
+external_exists() {
+  gg status "$PROJECT" 2>/dev/null \
+    | sed -E 's/^[[:space:]]*[●○◐◆][[:space:]]*//' \
+    | awk -v s="$1" '$1 == s && $2 == "external"' | grep -q .
+}
+for ext in "${EXTERNAL_NAMES[@]}"; do
+  if external_exists "$ext"; then
+    say "Restating the values in '$PROJECT/$ext'"
+    run gg resource rotate "$PROJECT/$ext" --env-file "$WORK/$ext.env"
+  else
+    say "Holding the credentials in a new external '$PROJECT/$ext'"
+    run gg resource add "$PROJECT/$ext" external --env-file "$WORK/$ext.env"
+  fi
+done
 
 # The service row from `gg status`, with the ●/○ health marker stripped so the
 # service name lands in field 1.
@@ -162,7 +213,8 @@ ship() {
     --env "PUBLIC_URL=$public_url" \
     --env "PORT=$PORT" \
     --env "TZ=UTC" \
-    --env "NODE_ENV=production"
+    --env "NODE_ENV=production" \
+    --deps telegram --deps encryption
 }
 
 say "Building and shipping (~2 min; longer on the first run)"

@@ -20,7 +20,11 @@ Every page is also on the site: https://gagarin.cloud/recipes
 
 ## Using one
 
-Open the recipe's directory in your coding agent and paste the sentence from
+The quickest way is the "Deploy to Gagarin Cloud" badge at the top of each
+recipe's README. It opens the recipe in the console, asks for its inputs (your
+own keys, never ours), and installs it into a new project of yours.
+
+Or open the recipe's directory in your coding agent and paste the sentence from
 its README. The agent installs `gg`, asks you to approve one sign-in in a
 browser, and runs the commands. Or run them yourself; they are all in the
 README.
@@ -40,7 +44,8 @@ CI does a dry run of every recipe and deploys nothing. It:
   Postgres or Qdrant;
 - checks every `gg` command in a README against the real CLI;
 - lints the example deploy workflows (chit-chat has one, in
-  `chit-chat/.github/workflows/`) and checks that each takes its credential from
+  `chit-chat/.github/workflows/`) and this repository's own publish workflow,
+  and checks that each takes its credential from
   the repository's secrets, names it and every other secret nowhere else, never
   runs `gg login`, and tags every image it builds or deploys with the commit. The checks run here, but the workflows
   themselves only run once somebody copies the recipe into a repository of
@@ -48,11 +53,18 @@ CI does a dry run of every recipe and deploys nothing. It:
 
 ## How a recipe is published
 
-The `publish` workflow (`.github/workflows/publish.yml`) ships chit-chat into
-the gagarin account's own project and snaps a recipe version from it with
-`gg recipe snap`. The other recipes will follow once each has a project of its
-own. A recipe's README can carry the deploy badge that starts a deploy from its
-published version.
+Every recipe here is published as a one-click recipe. Each runs in a project of
+its own in the gagarin account, built from this repository with placeholder
+values in its externals, since a recipe carries an external's variable names
+and never its values.
+
+The `publish` workflow (`.github/workflows/publish.yml`) keeps them current. On
+a push to `main`, `.ci/changed-recipes.sh` lists the recipes whose images the
+push changed: anything in the directory but Markdown and its example workflow.
+For each, the workflow builds the images tagged with the commit, deploys them
+into that recipe's project, and snaps a new version with `gg recipe snap`. Its
+notes, which the deploy page shows, come from the recipe's `recipe-notes.txt`.
+Run it by hand and it republishes all of them.
 
 ## License
 

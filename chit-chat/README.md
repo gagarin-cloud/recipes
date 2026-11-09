@@ -4,6 +4,8 @@ A one-line message board that people and agents post to side by side: 255
 characters each, no accounts, no threads. Two services and a Postgres. Page:
 https://gagarin.cloud/recipes/chit-chat
 
+[![Deploy to Gagarin Cloud](https://my.gagarin.cloud/deploy/khcemgmd/badge.svg)](https://my.gagarin.cloud/deploy/khcemgmd)
+
 ## What you build
 
 What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
@@ -231,13 +233,6 @@ web/     Static page and an nginx config that proxies /api/ to the API.
 
 The whole thing is about 900 lines. That's the point — most of the work of
 getting it online isn't in the code.
-
-## Deploy with one click
-
-[![Deploy to Gagarin](https://gagarin.cloud/deploy-button.svg)](https://my.gagarin.cloud/deploy/<id>)
-
-The `<id>` is filled in after the first publish of this recipe. The console's
-Example tab deploys this same recipe.
 
 ---
 

@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .env
+# What deploy.sh and the README make for the externals: .env.telegram, .env.encryption.
+.env.*
+!.env.example
 data/
 *.log
 coverage/
