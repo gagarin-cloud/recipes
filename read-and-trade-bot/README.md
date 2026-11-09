@@ -9,13 +9,20 @@ https://gagarin.cloud/recipes/read-and-trade-bot
 **It has no validated edge and it is not financial advice.** It is an example
 of a worker, a website and a database running together, with real API costs.
 
+[![Deploy to Gagarin Cloud](https://my.gagarin.cloud/deploy/j39zah3a/badge.svg)](https://my.gagarin.cloud/deploy/j39zah3a)
+
 ## What you build
 
 What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
 
-- `bot` (service, worker, :8080 health, private) → `db`
+- `bot` (service, worker, :8080 health, private) → `db`, `openai`, `telegram`, `finnhub`, `marketaux`, `sec`
 - `web` (service, Next.js, :3000, public address) → `db`
 - `db` (Postgres, 10 GB disk)
+- `openai` (external, OPENAI_API_KEY)
+- `telegram` (external, TELEGRAM_BOT_TOKEN, TELEGRAM_CHANNEL_ID)
+- `finnhub` (external, FINNHUB_API_KEY)
+- `marketaux` (external, MARKETAUX_API_KEY)
+- `sec` (external, SEC_USER_AGENT)
 
 The worker calls OpenAI, SEC EDGAR, Finnhub, Marketaux and Telegram. The
 website reads the same database and writes nothing.
@@ -35,6 +42,11 @@ get it.
 | Name | Kind | Size | Holds |
 |---|---|---|---|
 | `db` | postgres | s, 10 GB disk | seen events and scored calls |
+| `openai` | external | none | `API_KEY` |
+| `telegram` | external | none | `BOT_TOKEN`, `CHANNEL_ID` |
+| `finnhub` | external | none | `API_KEY` |
+| `marketaux` | external | none | `API_KEY` |
+| `sec` | external | none | `USER_AGENT` |
 | `bot` | service | s | the worker, private |
 | `web` | service | s | the website, at a public HTTPS address |
 
@@ -45,12 +57,27 @@ get it.
 ```
 gg init read-and-trade
 gg resource add read-and-trade/db postgres --size s --storage 10
-gg ship read-and-trade/bot:8080 --size s --env-file .env
-gg deps add read-and-trade/bot db
-gg ship read-and-trade/web:3000 --context ./web --size s
-gg deps add read-and-trade/web db
+gg resource add read-and-trade/openai external --env-file .env.openai
+gg resource add read-and-trade/telegram external --env-file .env.telegram
+gg resource add read-and-trade/finnhub external --env-file .env.finnhub
+gg resource add read-and-trade/marketaux external --env-file .env.marketaux
+gg resource add read-and-trade/sec external --env-file .env.sec
+gg ship read-and-trade/bot:8080 --size s --env TZ=UTC --env NODE_ENV=production --deps db --deps openai --deps telegram --deps finnhub --deps marketaux --deps sec
+gg ship read-and-trade/web:3000 --context ./web --size s --env TZ=UTC --env NODE_ENV=production --deps db
 gg domain add read-and-trade/web
 ```
+
+Each `.env.<name>` file holds one external's own variable names, for example
+`printf 'API_KEY=%s\n' "$OPENAI_API_KEY" > .env.openai`. `.env.telegram` holds
+`BOT_TOKEN` and `CHANNEL_ID`; `.env.sec` holds `USER_AGENT`. Keep them out of
+git. `./deploy.sh` writes the same files from `.env` into a private temporary
+directory instead, and deletes it when it finishes.
+
+Gagarin publishes an external's variables to the services that depend on it as
+`<NAME>_<VAR>`: `openai` holding `API_KEY` becomes `OPENAI_API_KEY`, which is
+what the worker reads. Optional tuning keys from `.env` (`TRIAGE_MODEL`,
+`MIN_CONVICTION`, `INGEST_CRON`) go on the bot as plain env. The website holds
+no credentials.
 
 ## What it costs
 

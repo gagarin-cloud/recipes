@@ -11,13 +11,17 @@ makes that less likely and does not rule it out. Use an account you can afford
 to lose. Anyone holding a token this server issues can read that account's
 private chats.
 
+[![Deploy to Gagarin Cloud](https://my.gagarin.cloud/deploy/3ma5lgoj/badge.svg)](https://my.gagarin.cloud/deploy/3ma5lgoj)
+
 ## What you build
 
 What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.
 
 - `client` (outside Gagarin, your MCP client) → `mcp`
-- `mcp` (service, :8080 · OAuth, public address) → `telegram`
-- `telegram` (outside Gagarin, MTProto)
+- `mcp` (service, :8080 · OAuth, public address) → `telegram`, `encryption`, `mtproto`
+- `telegram` (external, TELEGRAM_API_ID, TELEGRAM_API_HASH)
+- `encryption` (external, ENCRYPTION_KEY)
+- `mtproto` (outside Gagarin, Telegram's API)
 
 The server is its own OAuth authorization server, and Telegram is its user
 database. You add it as a connector, sign in to Telegram on its page (QR code
@@ -38,6 +42,8 @@ https://my.telegram.org and an `ENCRYPTION_KEY` (`openssl rand -hex 32`).
 
 | Name | Kind | Size | Holds |
 |---|---|---|---|
+| `telegram` | external | none | `API_ID`, `API_HASH` |
+| `encryption` | external | none | `KEY` |
 | `mcp` | service | s | the server, at a public HTTPS address |
 
 ## The commands
@@ -46,13 +52,33 @@ https://my.telegram.org and an `ENCRYPTION_KEY` (`openssl rand -hex 32`).
 
 ```
 gg init telegram-mcp
-gg ship telegram-mcp/mcp:8080 --env-file .env --env PUBLIC_URL=http://localhost:8080
+gg resource add telegram-mcp/telegram external --env-file .env.telegram
+gg resource add telegram-mcp/encryption external --env-file .env.encryption
+gg ship telegram-mcp/mcp:8080 --env PORT=8080 --env TZ=UTC --env NODE_ENV=production --env PUBLIC_URL=http://localhost:8080 --deps telegram --deps encryption
 gg domain add telegram-mcp/mcp
-gg deploy telegram-mcp/mcp:8080 mcp:<tag> --env-file .env --env PUBLIC_URL=https://<address>
+gg deploy telegram-mcp/mcp:8080 mcp:<tag> --env PORT=8080 --env TZ=UTC --env NODE_ENV=production --env PUBLIC_URL=https://<address>
 ```
+
+`.env.telegram` holds `API_ID` and `API_HASH`; `.env.encryption` holds `KEY`.
+For example `printf 'KEY=%s\n' "$ENCRYPTION_KEY" > .env.encryption`. Keep them
+out of git. `./deploy.sh` writes the same files from `.env` into a private
+temporary directory instead, and deletes it when it finishes. Gagarin publishes
+them to `mcp` as `TELEGRAM_API_ID`, `TELEGRAM_API_HASH` and `ENCRYPTION_KEY`.
 
 The second deploy is the same image again, told its own address: the address
 is the OAuth issuer, and it does not exist until `gg domain add` runs.
+
+## After a one-click install
+
+The one-click recipe installs without `PUBLIC_URL`, because that is the address
+of whoever deployed it. Until it is set, sign-in fails. Set it with one deploy
+of the installed image, which restates the plain env:
+
+```
+gg deploy <project>/mcp:8080 <image> --env PORT=8080 --env TZ=UTC --env NODE_ENV=production --env PUBLIC_URL=https://<address>
+```
+
+`<image>` and `<address>` are as `gg status <project>` prints them.
 
 ## What it costs
 

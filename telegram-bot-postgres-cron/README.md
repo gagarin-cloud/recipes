@@ -4,6 +4,8 @@ A Telegram bot that saves every message it sees to Postgres and answers with a
 count. Once a day, a scheduled job sends each chat a summary of who said how
 much. Page: https://gagarin.cloud/recipes/telegram-bot-postgres-cron
 
+[![Deploy to Gagarin Cloud](https://my.gagarin.cloud/deploy/l3i0ky06/badge.svg)](https://my.gagarin.cloud/deploy/l3i0ky06)
+
 ## What you build
 
 What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.

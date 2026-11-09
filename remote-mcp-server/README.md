@@ -4,6 +4,8 @@ A remote MCP server over streamable HTTP with one example tool, behind a bearer
 token, at an HTTPS address your agent can connect to. Page:
 https://gagarin.cloud/recipes/remote-mcp-server
 
+[![Deploy to Gagarin Cloud](https://my.gagarin.cloud/deploy/20b6t9pj/badge.svg)](https://my.gagarin.cloud/deploy/20b6t9pj)
+
 ## What you build
 
 What Gagarin creates, and what may reach what. An arrow is a dependency edge: the left side can reach the right and is handed its credentials. The recipe's page draws this as a graph.

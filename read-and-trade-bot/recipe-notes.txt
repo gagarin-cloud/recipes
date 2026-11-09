@@ -1,0 +1,1 @@
+Five inputs: openai (API_KEY), telegram (BOT_TOKEN, CHANNEL_ID, with the bot an admin of that channel), finnhub (API_KEY), marketaux (API_KEY), sec (USER_AGENT, a name and a contact email, which SEC EDGAR requires). OpenAI tokens are billed by OpenAI.

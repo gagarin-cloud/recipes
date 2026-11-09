@@ -1,68 +1,295 @@
 name: publish
 
-# Ships chit-chat into the gagarin account's own `chit-chat` project and snaps
-# a new recipe version from it, on every change to what goes into the images.
+# Every recipe in this repository is published as a one-click recipe from a
+# project of its own in the gagarin account. On a push that changes what goes
+# into a recipe's images, this ships the new images into that project and
+# snaps a new recipe version from it, so the badge in the recipe's README
+# always installs the newest commit.
 #
-# The project itself (pg, the dependency edges, the address) was created once
-# by hand with the commands in chit-chat/README.md. This workflow only ships
-# new images and snaps a recipe version; it creates and removes nothing.
+#   recipe                       project                      recipe id
+#   chit-chat                    chit-chat                    khcemgmd
+#   remote-mcp-server            remote-mcp-server            20b6t9pj
+#   rag-api-qdrant               rag-api-qdrant               lzed09ck
+#   telegram-bot-postgres-cron   telegram-bot-postgres-cron   l3i0ky06
+#   read-and-trade-bot           read-and-trade-bot           j39zah3a
+#   telegram-mcp                 telegram-mcp-recipe          3ma5lgoj
+#
+# Each project was created once by hand with the commands in its README, with
+# placeholder values in its externals: a recipe carries an external's variable
+# names, never its values. This workflow only ships images and snaps; it
+# creates and removes nothing. A deploy keeps a service's dependencies and
+# address, so they are not restated here; it replaces the environment, so the
+# plain env is.
+#
+# A snap's notes become what the deploy page shows, so every job restates its
+# recipe's installer notes, kept in <recipe>/recipe-notes.txt, rather than
+# only the commit. They are a file, not a string here, because they quote gg
+# commands for the installer to run, and this file's gg lines are linted as
+# the ones that run.
 #
 # It needs one secret, GAGARIN_TOKEN, a credential a human minted for this
 # pipeline and stored as the repository secret:
 #
 #   gh secret set GAGARIN_TOKEN --body "$(gg creds create --name "github actions: gagarin-cloud/recipes")"
 #
-# Nothing here publishes to ghcr any more: the engine copies images between
-# registry spaces itself.
+# Explicit jobs rather than a matrix, so .ci/deploy-example.sh sees every gg
+# build and gg deploy line as it runs.
 
 on:
   push:
     branches: [main]
-    paths:
-      - "chit-chat/**"
-      # Only what goes into the images: not the deploy example, not the docs.
-      - "!chit-chat/.github/**"
-      - "!chit-chat/**/*.md"
-      - ".github/workflows/publish.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# One publish at a time. GitHub keeps at most one run waiting and a newer push
+# replaces it; nothing is lost by that, because each run publishes everything
+# changed since the last run that succeeded in full, not since the push before.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 jobs:
-  chit-chat:
+  # Which recipes changed since the last run that published everything it set
+  # out to, as a JSON array of slugs; all of them on a manual run. A recipe
+  # whose job failed, or whose push was replaced in the queue, is published
+  # by the next run. .ci/changed-recipes.sh says what counts.
+  #
+  # main only: a manual run from a branch would snap unmerged code into the
+  # recipes every badge installs. Every other job needs this one, so they are
+  # skipped with it.
+  changes:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    # The credential belongs to this job alone, not to any job added later.
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      recipes: ${{ steps.diff.outputs.recipes }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: base
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow publish.yml --branch main \
+            --status success --limit 1 --json headSha --jq '.[0].headSha // ""')
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - id: diff
+        env:
+          BEFORE: ${{ steps.base.outputs.sha }}
+        run: echo "recipes=$(.ci/changed-recipes.sh "$BEFORE" "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
+
+  chit-chat:
+    needs: changes
+    if: contains(fromJSON(needs.changes.outputs.recipes), 'chit-chat')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The credential belongs to each job that ships, not to the workflow.
     env:
       GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
       PROJECT: chit-chat
+      # A released gg, not whatever is newest: a moved release must not change
+      # what runs beside the credential. Bump it on purpose.
+      GAGARIN_INSTALL_VERSION: v0.61.0
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
       - name: Install gg
         run: |
           curl -fsSL https://gagarin.cloud/install.sh | sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       - name: Log docker in to the Gagarin registry
         run: gg registry login
-
       - name: Build and publish both images
         run: |
           gg build "$PROJECT/api:${{ github.sha }}" --context ./chit-chat/api --push
           gg build "$PROJECT/web:${{ github.sha }}" --context ./chit-chat/web --push
-
-      # A deploy replaces the environment, so PORT is said every time.
       - name: Release
         run: |
           gg deploy "$PROJECT/api:4000" "api:${{ github.sha }}" --env PORT=4000
           gg deploy "$PROJECT/web:8080" "web:${{ github.sha }}"
-
       - name: Say what Gagarin is doing
         run: gg status "$PROJECT"
-
-      # No --version: the floor applies, and a digest-only change is a patch.
+      # No --version: the platform sets the floor, and a new digest is a patch.
       - name: Snap a recipe version
-        run: gg recipe snap "$PROJECT" --notes "recipes@${{ github.sha }}"
+        run: |
+          gg recipe snap "$PROJECT" \
+            --source "https://github.com/gagarin-cloud/recipes/tree/main/chit-chat" \
+            --notes "recipes@${{ github.sha }}"
+
+  remote-mcp-server:
+    needs: changes
+    if: contains(fromJSON(needs.changes.outputs.recipes), 'remote-mcp-server')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
+      PROJECT: remote-mcp-server
+      GAGARIN_INSTALL_VERSION: v0.61.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gg
+        run: |
+          curl -fsSL https://gagarin.cloud/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Log docker in to the Gagarin registry
+        run: gg registry login
+      - name: Build and publish the image
+        run: gg build "$PROJECT/mcp:${{ github.sha }}" --context ./remote-mcp-server --push
+      - name: Release
+        run: gg deploy "$PROJECT/mcp:8080" "mcp:${{ github.sha }}"
+      - name: Say what Gagarin is doing
+        run: gg status "$PROJECT"
+      - name: Snap a recipe version
+        run: |
+          gg recipe snap "$PROJECT" \
+            --source "https://github.com/gagarin-cloud/recipes/tree/main/remote-mcp-server" \
+            --notes "recipes@${{ github.sha }}. $(cat remote-mcp-server/recipe-notes.txt)"
+
+  rag-api-qdrant:
+    needs: changes
+    if: contains(fromJSON(needs.changes.outputs.recipes), 'rag-api-qdrant')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
+      PROJECT: rag-api-qdrant
+      GAGARIN_INSTALL_VERSION: v0.61.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gg
+        run: |
+          curl -fsSL https://gagarin.cloud/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Log docker in to the Gagarin registry
+        run: gg registry login
+      - name: Build and publish the image
+        run: gg build "$PROJECT/api:${{ github.sha }}" --context ./rag-api-qdrant --push
+      - name: Release
+        run: gg deploy "$PROJECT/api:8080" "api:${{ github.sha }}"
+      - name: Say what Gagarin is doing
+        run: gg status "$PROJECT"
+      - name: Snap a recipe version
+        run: |
+          gg recipe snap "$PROJECT" \
+            --source "https://github.com/gagarin-cloud/recipes/tree/main/rag-api-qdrant" \
+            --notes "recipes@${{ github.sha }}. $(cat rag-api-qdrant/recipe-notes.txt)"
+
+  telegram-bot-postgres-cron:
+    needs: changes
+    if: contains(fromJSON(needs.changes.outputs.recipes), 'telegram-bot-postgres-cron')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
+      PROJECT: telegram-bot-postgres-cron
+      GAGARIN_INSTALL_VERSION: v0.61.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gg
+        run: |
+          curl -fsSL https://gagarin.cloud/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Log docker in to the Gagarin registry
+        run: gg registry login
+      - name: Build and publish the image
+        run: gg build "$PROJECT/bot:${{ github.sha }}" --context ./telegram-bot-postgres-cron --push
+      # The digest is the same image run as a scheduled job. On a job that is
+      # already scheduled, gg run updates what the next firing runs; like a
+      # deploy, it replaces the environment, so MODE is said every time.
+      - name: Release
+        run: |
+          gg deploy "$PROJECT/bot:8080" "bot:${{ github.sha }}"
+          gg run "$PROJECT/digest" "bot:${{ github.sha }}" --schedule "0 7 * * *" --env MODE=digest --deps db --deps telegram
+      - name: Say what Gagarin is doing
+        run: gg status "$PROJECT"
+      - name: Snap a recipe version
+        run: |
+          gg recipe snap "$PROJECT" \
+            --source "https://github.com/gagarin-cloud/recipes/tree/main/telegram-bot-postgres-cron" \
+            --notes "recipes@${{ github.sha }}. $(cat telegram-bot-postgres-cron/recipe-notes.txt)"
+
+  read-and-trade-bot:
+    needs: changes
+    if: contains(fromJSON(needs.changes.outputs.recipes), 'read-and-trade-bot')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
+      PROJECT: read-and-trade-bot
+      GAGARIN_INSTALL_VERSION: v0.61.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gg
+        run: |
+          curl -fsSL https://gagarin.cloud/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Log docker in to the Gagarin registry
+        run: gg registry login
+      - name: Build and publish both images
+        run: |
+          gg build "$PROJECT/bot:${{ github.sha }}" --context ./read-and-trade-bot --push
+          gg build "$PROJECT/web:${{ github.sha }}" --context ./read-and-trade-bot/web --push
+      # Credentials reach the services through the externals they depend on;
+      # the plain env is tuning only.
+      - name: Release
+        run: |
+          gg deploy "$PROJECT/bot:8080" "bot:${{ github.sha }}" --env TZ=UTC --env NODE_ENV=production
+          gg deploy "$PROJECT/web:3000" "web:${{ github.sha }}" --env TZ=UTC --env NODE_ENV=production
+      - name: Say what Gagarin is doing
+        run: gg status "$PROJECT"
+      - name: Snap a recipe version
+        run: |
+          gg recipe snap "$PROJECT" \
+            --source "https://github.com/gagarin-cloud/recipes/tree/main/read-and-trade-bot" \
+            --notes "recipes@${{ github.sha }}. $(cat read-and-trade-bot/recipe-notes.txt)"
+
+  telegram-mcp:
+    needs: changes
+    if: contains(fromJSON(needs.changes.outputs.recipes), 'telegram-mcp')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GAGARIN_TOKEN: ${{ secrets.GAGARIN_TOKEN }}
+      # Not `telegram-mcp`: that name is a live server, and the recipe is
+      # snapped from a project that holds placeholders.
+      PROJECT: telegram-mcp-recipe
+      GAGARIN_INSTALL_VERSION: v0.61.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install gg
+        run: |
+          curl -fsSL https://gagarin.cloud/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Log docker in to the Gagarin registry
+        run: gg registry login
+      - name: Build and publish the image
+        run: gg build "$PROJECT/mcp:${{ github.sha }}" --context ./telegram-mcp --push
+      # No PUBLIC_URL: it is an install's own address, which nobody knows
+      # until the install exists. The notes tell the installer to set it.
+      - name: Release
+        run: gg deploy "$PROJECT/mcp:8080" "mcp:${{ github.sha }}" --env PORT=8080 --env TZ=UTC --env NODE_ENV=production
+      - name: Say what Gagarin is doing
+        run: gg status "$PROJECT"
+      - name: Snap a recipe version
+        run: |
+          gg recipe snap "$PROJECT" --as telegram-mcp \
+            --source "https://github.com/gagarin-cloud/recipes/tree/main/telegram-mcp" \
+            --notes "recipes@${{ github.sha }}. $(cat telegram-mcp/recipe-notes.txt)"

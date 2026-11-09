@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .env
+# The externals' env files, when you make them by hand: .env.telegram, .env.encryption.
+.env.*
+!.env.example
 data/
 *.log
 coverage/
