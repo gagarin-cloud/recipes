@@ -64,8 +64,8 @@ gg login                                           # run again once approved: it
 gg whoami                                          # should print your account
 ```
 
-Prefer a package manager? `brew install --cask gagarin-cloud/tap/gg`, scoop or
-winget, or `go install github.com/gagarin-cloud/gg@latest`; every route is at
+Prefer a package manager? `brew install --cask gagarin-cloud/tap/gg`, scoop,
+or `go install github.com/gagarin-cloud/gg@latest`; every route is at
 <https://github.com/gagarin-cloud/gg#install>. `gg upgrade` updates it later.
 
 Docker must be running: `gg` builds the image locally before pushing it.
