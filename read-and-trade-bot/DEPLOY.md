@@ -210,7 +210,7 @@ curl -fsSL https://gagarin.cloud/install.sh | sh
 On Windows (PowerShell): `irm https://gagarin.cloud/install.ps1 | iex`. The script
 verifies the download against the release's checksums and installs to
 `~/.local/bin` without sudo. Prefer a package manager? `brew install --cask
-gagarin-cloud/tap/gg` (macOS), scoop or winget (Windows), `go install
+gagarin-cloud/tap/gg` (macOS), scoop (Windows), `go install
 github.com/gagarin-cloud/gg@latest`, or a `.deb`/`.rpm`/`.apk` from
 <https://github.com/gagarin-cloud/gg/releases>. Every route:
 <https://github.com/gagarin-cloud/gg#install>. Later, `gg upgrade` brings it
